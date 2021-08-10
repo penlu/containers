@@ -142,5 +142,5 @@
 (define (add-proc-fd! proc f)
   (define fds (process-fds proc))
   (define fd (+ 1 (length fds)))
-  (set-process-fds! (list* (cons fd f) fds))
+  (set-process-fds! proc (list* (cons fd f) fds))
   fd)

@@ -19,9 +19,13 @@
 ; returns a mount if one is found; otherwise returns the starting mount
 (define (lookup-mnt sys dent)
   (define mnt (lookup-one-mnt sys dent))
-  (if mnt
-    (lookup-mnt sys (dentry mnt (mount-root mnt)))
-    (dentry-mnt dent)))
+  (cond
+    ; found no mount; return current mount
+    [(not mnt) (dentry-mnt dent)]
+    ; parent mount is same; we are at root
+    [(equal? mnt (dentry-mnt dent)) mnt]
+    ; go up one more
+    [else (lookup-mnt sys (dentry mnt (mount-root mnt)))]))
 
 ; return the dentry we're at after mount traversal
 (define (traverse-mounts sys dent)
@@ -38,11 +42,14 @@
     (define cur-mnt (dentry-mnt cur))
     (define cur-mntpt (mount-mountpoint cur-mnt))
     (define parent-mnt (dentry-mnt cur-mntpt))
-    (if (equal? (dentry-ino cur-mntpt) (mount-root parent-mnt))
+    (cond
+      ; parent mount is same; we are at root
+      [(equal? cur-mnt parent-mnt) cur-mntpt]
       ; this is the root of the parent mount; we go up again
-      (ascend cur-mntpt)
+      [(equal? (dentry-ino cur-mntpt) (mount-root parent-mnt))
+        (ascend cur-mntpt)]
       ; we stop here
-      cur-mntpt)))
+      [else cur-mntpt])))
 
 ; performs path traversal, returning a found dentry or an error
 ; namei starts from the process's root
@@ -53,10 +60,10 @@
   ; iterate over path; for each entry:
   ; - look for the child with the appropriate name
   ; - is there something mounted here? go into mount; iterate until bottom mount
-  (define-values (start-dent start-path)
-    (if (or (null? path) (not (equal? (car path) "/")))
-      (values (process-pwd proc) path)
-      (values (process-root proc) (cdr path))))
+  (define is-rel (or (null? path) (not (equal? (car path) "/"))))
+  ; would've used define-values but this upsets rosette
+  (define start-dent (if is-rel (process-pwd proc) (process-root proc)))
+  (define start-path (if is-rel path (cdr path)))
   (let walk-component ([cur start-dent] [next start-path])
     (define cur-mnt (dentry-mnt cur))
     (define cur-ino (dentry-ino cur))
@@ -224,8 +231,8 @@
   (define d (assoc fd (process-fds proc)))
   (cond
     [(not d) 'EBADF]
-    [(not (inode-d? (dentry-ino d))) 'ENOTDIR]
-    [else (set-process-pwd! proc d)]))
+    [(not (inode-d? (dentry-ino (cdr d)))) 'ENOTDIR]
+    [else (set-process-pwd! proc (cdr d))]))
 
 (define (syscall-open! sys proc path)
   (define f (namei sys proc path))
