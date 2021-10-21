@@ -11,6 +11,7 @@
     [(equal? e 'EEXIST) #t]
     [(equal? e 'ENOENT) #t]
     [(equal? e 'ENOTDIR) #t]
+    [(equal? e 'EPERM) #t]
     [else #f]))
 
 ; instead of dentries, we are using (mount . inode) pairs
@@ -34,7 +35,7 @@
 ; - fds (list of (fd, dentry)) pairs
 ; TODO users, capabilities
 ; TODO cgroups eventually
-(struct process (mnt-ns root pwd fds) #:transparent #:mutable)
+(struct process (mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
 
 ; a mount namespace contains:
 ; - root mount
@@ -90,7 +91,7 @@
              [root-mount (mount root-dev ns root-dentry root-inode)]
              [root-dentry (dentry root-mount root-inode)])
       (values ns root-mount root-dentry)))
-  (define proc (process ns root-dentry root-dentry '()))
+  (define proc (process ns root-dentry root-dentry '() #t))
   (system (list proc) (list (cons root-dentry root-mount)) (list root-dev)))
 
 (define (dentry-parent dent)

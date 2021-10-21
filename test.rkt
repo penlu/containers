@@ -147,12 +147,31 @@
 
 (test-escape)
 
-(define-values (sys proc) (escape-setup))
-(define calls (Calls 3))
+(define (synthesize-escape)
+  (define-values (sys proc) (escape-setup))
+  (define calls (Calls 3))
 
-(interpret-calls sys proc calls)
-(assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
-(define model (solve (assert #t)))
-(if (sat? model)
-  (printf "escaped chroot: ~v\n" (evaluate calls model))
-  (printf "couldn't find escape :(\n"))
+  (interpret-calls sys proc calls)
+  (assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
+  (define model (solve (assert #t)))
+  (if (sat? model)
+    (printf "escaped chroot: ~v\n:D" (evaluate calls model))
+    (printf "couldn't find escape :(\n"))
+  )
+
+(synthesize-escape)
+
+(define (synthesize-no-escape)
+  (define-values (sys proc) (escape-setup))
+  (syscall-drop-cap-sys-chroot! sys proc)
+  (define calls (Calls 6))
+
+  (interpret-calls sys proc calls)
+  (assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
+  (define model (solve (assert #t)))
+  (if (sat? model)
+    (printf "escaped chroot?! ~v\n:(" (evaluate calls model))
+    (printf "couldn't find escape :D\n"))
+  )
+
+(synthesize-no-escape)

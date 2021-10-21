@@ -53,8 +53,6 @@
 
 ; performs path traversal, returning a found dentry or an error
 ; namei starts from the process's root
-; TODO relative paths
-; TODO . and .. (need more precise dentry model)
 (define (namei sys proc path)
   ; start from the process root
   ; iterate over path; for each entry:
@@ -146,10 +144,11 @@
 ; returns an error or nothing
 (define (syscall-chroot! sys proc path)
   (define new-root (namei sys proc path))
-  (if (err? new-root)
+  (cond
     ; some path resolution error
-    new-root
-    (set-process-root! proc new-root)))
+    [(err? new-root) new-root]
+    [(not (process-may-chroot proc)) 'EPERM]
+    [else (set-process-root! proc new-root)]))
 
 ; accepts:
 ; - source: a device
@@ -195,7 +194,8 @@
       ns
       (process-root proc)
       (process-pwd proc)
-      (process-fds proc)))
+      (process-fds proc)
+      (process-may-chroot proc)))
   (set-system-procs! sys (list* new-proc (system-procs sys)))
   new-proc)
 
@@ -205,7 +205,6 @@
     (define new-ns (copy-mnt-namespace! sys (process-mnt-ns proc)))
     (set-process-mnt-ns! new-ns)))
 
-; TODO dev and num are just here until we get a device model
 (define (syscall-mkdir! sys proc path)
   (define basename (car (reverse path)))
   (define dirname (reverse (cdr (reverse path))))
@@ -239,3 +238,7 @@
   (cond
     [(err? f) f]
     [else (add-proc-fd! proc f)]))
+
+; TODO just a stand-in
+(define (syscall-drop-cap-sys-chroot! sys proc)
+  (set-process-may-chroot! proc #f))
