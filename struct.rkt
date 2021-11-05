@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 
 ; === STRUCTURES ===
+; TODO enforcing field types would be great
 
 ; error codes
 (define (err? e)
@@ -23,7 +24,7 @@
 ; slash corresponds to root; each component corresponds to a filename
 
 ; the system contains:
-; - process list
+; - process list (should be a map)
 ; - mount list: list of pairs (dentry . mount)
 ; - inode list
 (struct system (procs mounts devs) #:transparent #:mutable)
@@ -33,8 +34,9 @@
 ; - root dir (dentry)
 ; - working dir (dentry)
 ; - fds (list of (fd, dentry)) pairs
-; TODO users, capabilities
-; TODO cgroups eventually
+; TODO tgid and pid are separate
+; TODO eventually: users, capabilities
+; TODO eventually: cgroups
 (struct process (mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
 
 ; a mount namespace contains:
@@ -47,17 +49,20 @@
 ; - mountpoint: a dentry
 ; - mount root: an inode
 ; this corresponds roughly to the vfsmount struct in linux
-; TODO propagation, i.e. mount groups
+; TODO proc
+; TODO eventually: propagation, i.e. mount groups
 (struct mount (ns dev mountpoint root) #:transparent #:mutable)
 
 ; a device contains:
 ; - name
 ; - num, used to assign numbers to inodes
 ; - a list of inodes
+; TODO proc
 (struct device (name num root inodes) #:transparent #:mutable
-  #:methods gen:custom-write
-  [(define (write-proc self port mode)
-    (fprintf port "(device ~v ~v)" (device-name self) (device-num self)))])
+  ;#:methods gen:custom-write
+  ;[(define (write-proc self port mode)
+  ;  (fprintf port "(device ~v ~v)" (device-name self) (device-num self)))]
+  )
 
 ; an inode is either:
 ; - a file, containing nothing
@@ -66,8 +71,8 @@
 ; an inode contains:
 ; - device
 ; - number: some identifier, unique within the scope of a device
-; TODO access permissions
-; TODO symlinks
+; TODO eventually: symlinks
+; TODO eventually: access permissions
 (struct inode (dev num) #:transparent)
 
 ; file inode

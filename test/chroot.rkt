@@ -1,6 +1,6 @@
 #lang rosette
 
-(require rosette/lib/angelic rosette/lib/match rosette/lib/synthax "struct.rkt" "calls.rkt")
+(require rosette/lib/angelic rosette/lib/match rosette/lib/synthax "../struct.rkt" "../calls.rkt")
 
 ; === TESTS ===
 
@@ -155,7 +155,7 @@
   (assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
   (define model (solve (assert #t)))
   (if (sat? model)
-    (printf "escaped chroot: ~v\n:D" (evaluate calls model))
+    (printf "escaped chroot: ~v\n:D\n" (evaluate calls model))
     (printf "couldn't find escape :(\n"))
   )
 
@@ -170,7 +170,7 @@
   (assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
   (define model (solve (assert #t)))
   (if (sat? model)
-    (printf "escaped chroot?! ~v\n:(" (evaluate calls model))
+    (printf "escaped chroot?! ~v\n:(\n" (evaluate calls model))
     (printf "couldn't find escape :D\n"))
   )
 

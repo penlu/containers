@@ -139,7 +139,7 @@
 ;   - the mount hashtable (a list of `mount`s)
 ;   - file system state (a list of `inode`s)
 ; - proc: the calling process
-; TODO how valid is the serializability assumption anyway?
+; TODO eventually: how valid is the serializability assumption anyway?
 
 ; returns an error or nothing
 (define (syscall-chroot! sys proc path)
@@ -153,7 +153,7 @@
 ; accepts:
 ; - source: a device
 ; - target: a path
-; - flags: TODO bind mounts, propagation properties
+; - flags: TODO eventually: bind mounts, propagation properties
 (define (syscall-mount! sys proc source target flags)
   (define ns (process-mnt-ns proc))
   ; find the parent mount and inode
@@ -184,7 +184,9 @@
 
 ; return new proc
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
-(define (syscall-clone! sys proc flags)
+; TODO setting returned PID
+; TODO CLONE_THREAD
+(define (syscall-clone! sys proc flags tid)
   (define ns
     (if (member 'CLONE_NEWNS flags)
       (copy-mnt-namespace! sys (process-mnt-ns proc))
