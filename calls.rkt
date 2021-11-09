@@ -184,22 +184,26 @@
 
 ; return new proc
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
-; TODO setting returned PID
-; TODO CLONE_THREAD
-(define (syscall-clone! sys proc flags tid)
+(define (syscall-clone! sys proc flags pid)
   (define ns
     (if (member 'CLONE_NEWNS flags)
       (copy-mnt-namespace! sys (process-mnt-ns proc))
       (process-mnt-ns proc)))
+  (define tgid
+    (if (member 'CLONE_THREAD flags)
+      (process-tgid proc)
+      pid))
   (define new-proc
     (process
+      tgid
+      pid
       ns
       (process-root proc)
       (process-pwd proc)
       (process-fds proc)
       (process-may-chroot proc)))
-  (set-system-procs! sys (list* new-proc (system-procs sys)))
-  new-proc)
+  (sys-add-proc! sys pid new-proc)
+  pid)
 
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
 (define (syscall-unshare! sys proc flags)
@@ -235,11 +239,13 @@
     [(not (inode-d? (dentry-ino (cdr d)))) 'ENOTDIR]
     [else (set-process-pwd! proc (cdr d))]))
 
-(define (syscall-open! sys proc path)
+(define (syscall-open!
+    sys proc path flags
+    [fd (+ 1 (length (process-fds proc)))])
   (define f (namei sys proc path))
   (cond
     [(err? f) f]
-    [else (add-proc-fd! proc f)]))
+    [else (add-proc-fd! proc fd f)]))
 
 ; TODO just a stand-in
 (define (syscall-drop-cap-sys-chroot! sys proc)

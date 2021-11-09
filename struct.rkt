@@ -24,7 +24,7 @@
 ; slash corresponds to root; each component corresponds to a filename
 
 ; the system contains:
-; - process list (should be a map)
+; - process map
 ; - mount list: list of pairs (dentry . mount)
 ; - inode list
 (struct system (procs mounts devs) #:transparent #:mutable)
@@ -37,7 +37,7 @@
 ; TODO tgid and pid are separate
 ; TODO eventually: users, capabilities
 ; TODO eventually: cgroups
-(struct process (mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
+(struct process (tgid pid mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
 
 ; a mount namespace contains:
 ; - root mount
@@ -96,8 +96,8 @@
              [root-mount (mount root-dev ns root-dentry root-inode)]
              [root-dentry (dentry root-mount root-inode)])
       (values ns root-mount root-dentry)))
-  (define proc (process ns root-dentry root-dentry '() #t))
-  (system (list proc) (list (cons root-dentry root-mount)) (list root-dev)))
+  (define proc (process 1 1 ns root-dentry root-dentry '() #t))
+  (system (list (cons 1 proc)) (list (cons root-dentry root-mount)) (list root-dev)))
 
 (define (dentry-parent dent)
   (dentry (dentry-mnt dent) (inode-d-parent (dentry-ino dent))))
@@ -145,8 +145,24 @@
 
 ; add file to process fd list
 ; return the fd
-(define (add-proc-fd! proc f)
+(define (add-proc-fd! proc fd f)
+  ; TODO fail on duplicate, probably
   (define fds (process-fds proc))
-  (define fd (+ 1 (length fds)))
-  (set-process-fds! proc (list* (cons fd f) fds))
+  ;(define fd (+ 1 (length fds)))
+  (set-process-fds! proc
+    (list*
+      (cons fd f)
+      (process-fds proc)))
   fd)
+
+(define (sys-get-proc sys pid)
+  (let ([proc (assoc pid (system-procs sys))])
+    (if proc (cdr proc) #f)))
+
+(define (sys-add-proc! sys pid proc)
+  ; TODO fail on duplicate, probably
+  (set-system-procs! sys
+    (list*
+      (cons pid proc)
+      (system-procs sys)))
+  pid)

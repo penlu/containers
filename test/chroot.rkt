@@ -8,7 +8,7 @@
 ; so there is a /foo/bar
 (define (test-sys)
   (define sys (create-sys))
-  (define proc (car (system-procs sys)))
+  (define proc (sys-get-proc sys 1))
   (define ns (process-mnt-ns proc))
   (define root-mount (car (system-mounts sys)))
   (define root-dentry (namei sys proc (list "/")))
@@ -39,11 +39,11 @@
   (add-sys-mounts! sys new-mount)
   (set-mnt-namespace-children! ns (list* new-mount (mnt-namespace-children ns)))
 
-  (define dentry-foo (namei sys (car (system-procs sys)) (list "foo")))
+  (define dentry-foo (namei sys proc (list "foo")))
   (printf "TEST: inode of namei with path /foo: ~v\n" (dentry-ino dentry-foo))
   (printf "TEST: lookup-one-mnt for dentry of /foo: ~v\n" (lookup-one-mnt sys dentry-foo))
 
-  (define dentry-bar (namei sys (car (system-procs sys)) (list "foo" "bar")))
+  (define dentry-bar (namei sys proc (list "foo" "bar")))
   (printf "TEST: inode of namei with path /foo/bar: ~v\n" (dentry-ino dentry-bar))
   )
 
@@ -51,7 +51,7 @@
 
 (define (test-sys2)
   (define sys (create-sys))
-  (define proc (car (system-procs sys)))
+  (define proc (sys-get-proc sys 1))
 
   (define dev-b (create-device 'b))
   (define dev-c (create-device 'c))
@@ -73,7 +73,7 @@
 ; set up a system with a chroot jail and try to escape
 (define (escape-setup)
   (define sys (create-sys))
-  (define proc (car (system-procs sys)))
+  (define proc (sys-get-proc sys 1))
 
   (define mount-dev (create-device 'b))
 
@@ -126,7 +126,7 @@
 (define (interpret-calls sys proc calls)
   (for-each (lambda (c)
     (match c
-      [(call-open path) (syscall-open! sys proc path)]
+      [(call-open path) (syscall-open! sys proc path '())]
       [(call-mkdir path) (syscall-mkdir! sys proc path)]
       [(call-chdir path) (syscall-chdir! sys proc path)]
       [(call-chroot path) (syscall-chroot! sys proc path)]
@@ -134,7 +134,7 @@
 
 (define (test-escape)
   (define-values (sys proc) (escape-setup))
-  (syscall-open! sys proc '())
+  (syscall-open! sys proc '() '())
   (printf "TEST: opened: ~v\n" proc)
   (syscall-mkdir! sys proc (list "b"))
   (printf "TEST: mkdir: ~v\n" (dentry-ino (process-pwd proc)))
