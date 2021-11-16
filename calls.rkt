@@ -6,98 +6,115 @@
 
 ; === METHODS ===
 
-; a path will be a list of strings
+; a name is a list of strings
+; struct path is (mount . dentry)
 
 ; see if something is mounted at the given dentry
 ; returns a mount if one is found; otherwise returns #f
-(define (lookup-one-mnt sys dent)
-  ; search the mount list
-  (let ([found (assoc dent (system-mounts sys))])
+(define (lookup-mnt sys path)
+  ; search the mount list for a mount such that:
+  ; - its parent is mnt
+  ; - its mountpoint is dent
+  (define mnt (car path))
+  (define dent (cdr path))
+  (define (pred entry)
+    (let ([entry-dent (car entry)]
+          [entry-mnt (cdr entry)])
+      (and (equal? dent entry-dent)
+      (equal? mnt (mount-parent entry-mnt)))))
+  (let ([found (findf pred (system-mounts sys))])
     (if found (cdr found) #f)))
 
-; find the bottommost mount at a dentry
-; returns a mount if one is found; otherwise returns the starting mount
-(define (lookup-mnt sys dent)
-  (define mnt (lookup-one-mnt sys dent))
+; find the bottommost mount at a path
+; returns starting path if none is found
+; otherwise, returns path corresponding to the root of the found mount
+(define (traverse-mounts sys path)
+  (define mnt (lookup-mnt sys path))
   (cond
     ; found no mount; return current mount
-    [(not mnt) (dentry-mnt dent)]
-    ; parent mount is same; we are at root
-    [(equal? mnt (dentry-mnt dent)) mnt]
-    ; go up one more
-    [else (lookup-mnt sys (dentry mnt (mount-root mnt)))]))
+    [(not mnt) path]
+    ; arrived at same mount; we are at FS root
+    [(equal? mnt (car path)) path]
+    ; go down one more
+    [else
+      (let ([next (cons mnt (mount-root mnt))])
+        (traverse-mounts sys next))]))
 
-; return the dentry we're at after mount traversal
-(define (traverse-mounts sys dent)
-  (define new-mnt (lookup-mnt sys dent))
-  (if (equal? new-mnt (dentry-mnt dent))
-    ; nothing is mounted here
-    dent
-    ; something is mounted here
-    (dentry new-mnt (mount-root new-mnt))))
-
-; return the dentry at which the topmost mount is mounted
-(define (choose-mountpoint dent)
-  (let ascend ([cur dent])
-    (define cur-mnt (dentry-mnt cur))
-    (define cur-mntpt (mount-mountpoint cur-mnt))
-    (define parent-mnt (dentry-mnt cur-mntpt))
+; try to traverse upward given a path that is the root of a mount
+; return the path of the topmost mount's mountpoint
+(define (choose-mountpoint path)
+  (let ascend ([cur path])
+    (define mnt (car cur))
+    (define parent-mnt (mount-parent mnt))
+    (define mountpoint (mount-mountpoint mnt))
     (cond
       ; parent mount is same; we are at root
-      [(equal? cur-mnt parent-mnt) cur-mntpt]
-      ; this is the root of the parent mount; we go up again
-      [(equal? (dentry-ino cur-mntpt) (mount-root parent-mnt))
-        (ascend cur-mntpt)]
+      [(equal? mnt parent-mnt) (cons mnt mountpoint)]
+      ; mountpoint is root of the parent mount; we go up again
+      [(equal? mountpoint (mount-root parent-mnt))
+        (ascend (cons parent-mnt mountpoint))]
       ; we stop here
-      [else cur-mntpt])))
+      [else (cons mnt mountpoint)])))
 
 ; performs path traversal, returning a found dentry or an error
 ; namei starts from the process's root
-(define (namei sys proc path)
+(define (namei sys proc name)
   ; start from the process root
-  ; iterate over path; for each entry:
+  ; iterate over name; for each entry:
   ; - look for the child with the appropriate name
   ; - is there something mounted here? go into mount; iterate until bottom mount
-  (define is-rel (or (null? path) (not (equal? (car path) "/"))))
+  (define is-rel (or (null? name) (not (equal? (car name) "/"))))
   ; would've used define-values but this upsets rosette
-  (define start-dent (if is-rel (process-pwd proc) (process-root proc)))
-  (define start-path (if is-rel path (cdr path)))
-  (let walk-component ([cur start-dent] [next start-path])
-    (define cur-mnt (dentry-mnt cur))
-    (define cur-ino (dentry-ino cur))
+  (define start-path (if is-rel (process-pwd proc) (process-root proc)))
+  (define start-name (if is-rel name (cdr name)))
+  (let walk-component ([cur start-path] [next start-name])
+    (define cur-mnt (car cur))
+    (define cur-dent (cdr cur))
+    (define cur-ino (dentry-ino cur-dent))
     (cond
-      ; done walking; return current dentry
+      ; done walking; return current path
       [(null? next) cur]
-      ; otherwise we must be a directory
-      [(not (inode-d? cur-ino)) 'ENOTDIR]
+      ; otherwise we had better be a directory
+      [(not (inode-dir? cur-ino)) 'ENOTDIR]
       ; . does nothing (?)
       [(equal? (car next) ".") (walk-component cur (cdr next))]
-      ; ..
+      ; .. goes up
       [(equal? (car next) "..")
         (cond
-          ; at our root; don't ascend
-          [(equal? cur (process-root proc)) (walk-component (process-root proc) (cdr next))]
+          ; at process root; don't ascend
+          [(equal? cur (process-root proc))
+            (walk-component (process-root proc) (cdr next))]
           ; at root of current mount
-          [(equal? (dentry-ino cur) (mount-root cur-mnt))
+          [(equal? cur-dent (mount-root cur-mnt))
             (if (equal? (mount-parent cur-mnt) cur-mnt)
-              ; we are at the root mount
+              ; at root of actual root mount
               (walk-component cur (cdr next))
-              (begin
-                ; go to topmost mountpoint
-                (define mntpt (choose-mountpoint cur))
-                (walk-component (traverse-mounts sys (dentry-parent mntpt)) (cdr next))))]
+              ; otherwise, ascend mounts to topmost mountpoint
+              (let* (
+                  [mountpath (choose-mountpoint cur)]
+                  ; XXX dentry-parent may get weird around root due to #f
+                  [parent-dent (dentry-parent (cdr mountpath))]
+                  [parent-mnt (car mountpath)]
+                  [parent-path (cons parent-mnt parent-dent)])
+                (walk-component (traverse-mounts sys parent-path) (cdr next))))]
           ; just go to parent
-          [else (walk-component (traverse-mounts sys (dentry-parent cur)) (cdr next))])]
+          [else
+            ; XXX dentry-parent may get weird around root due to #f
+            (let* (
+                [parent-dent (dentry-parent cur-dent)]
+                [parent-path (cons cur-mnt parent-dent)])
+              (walk-component (traverse-mounts sys parent-path) (cdr next)))])]
       ; normal path; look for child
       [else
-        (let ([found (assoc (car next) (inode-d-children cur-ino))])
+        (let ([found (inode-lookup cur-ino (car next))])
           (if (not found)
             ; no child with appropriate name; error
             'ENOENT
-            (begin
-              (define next-dentry (dentry cur-mnt (cdr found)))
-              (walk-component (traverse-mounts sys next-dentry) (cdr next)))))]
-        )))
+            ; drop into found child
+            (let* (
+                [dent (dentry found (cdr cur))]
+                [next-path (cons cur-mnt dent)])
+              (walk-component (traverse-mounts sys next-path) (cdr next)))))])))
 
 ; copy each mount in a mount namespace
 ; returns new mnt-namespace
@@ -109,23 +126,25 @@
   ; associate new mounts with corresponding old mounts
   (define mount-copy-pairs
     (for/list ([mnt (mnt-namespace-children ns)])
-      (cons mnt (mount new-ns '() (mount-root mnt)))))
-  (define mount-copies (map cadr mount-copy-pairs))
-  ; fix mountpoints to use corresponding new mount
+      (cons mnt (struct-copy mount mnt
+        [mnt-ns new-ns]
+        [parent '()]))))
+  (define mount-copies (map cdr mount-copy-pairs))
+  ; fix parent to use corresponding new mount
   (for-each
     (lambda (pair)
       (define old-mnt (car pair))
-      (define new-mnt (cadr pair))
-      (define mntpt (mount-mountpoint old-mnt))
-      (let ([found (assoc (dentry-mnt mntpt) mount-copy-pairs)])
+      (define new-mnt (cdr pair))
+      (define parent (mount-parent old-mnt))
+      (let ([found (assoc parent mount-copy-pairs)])
         (if found
-          (set-mount-mountpoint! (dentry (cadr found) (dentry-ino mntpt)))
+          (set-mount-parent! (cdr found))
           (error "copy of mount parent not found!"))))
     mount-copy-pairs)
   ; set new mount namespace root
   (set-mnt-namespace-root! new-ns
     (let ([found (assoc (mnt-namespace-root ns) mount-copy-pairs)])
-      (if found (cadr found) (error "copy of root mount not found!"))))
+      (if found (cdr found) (error "copy of root mount not found!"))))
   ; set new mount namespace children
   (set-mnt-namespace-children! new-ns mount-copies)
   ; add new mounts to system
@@ -139,7 +158,7 @@
 ;   - the mount hashtable (a list of `mount`s)
 ;   - file system state (a list of `inode`s)
 ; - proc: the calling process
-; TODO eventually: how valid is the serializability assumption anyway?
+; LATER: how valid is the serializability assumption anyway?
 
 ; returns an error or nothing
 (define (syscall-chroot! sys proc path)
@@ -153,16 +172,20 @@
 ; accepts:
 ; - source: a device
 ; - target: a path
-; - flags: TODO eventually: bind mounts, propagation properties
+; - flags: LATER: bind mounts, propagation properties
 (define (syscall-mount! sys proc source target flags)
   (define ns (process-mnt-ns proc))
   ; find the parent mount and inode
-  (define dent (namei sys proc target))
-  (if (err? dent)
-    dent
-    (begin
-      ; create a new mount w/ the indicated root directory and mountpoint
-      (define new-mnt (mount (process-mnt-ns proc) source dent (device-root source)))
+  (define path (namei sys proc target))
+  (if (err? path)
+    path
+    ; create a new mount w/ the indicated root directory and mountpoint
+    (let ([new-mnt (mount
+        (process-mnt-ns proc)
+        source
+        (car path)
+        (cdr path)
+        (device-root source))])
       ; add new mount and new inodes to system
       (add-sys-mounts! sys new-mnt)
       ; update mount namespace
@@ -171,16 +194,16 @@
 (define (syscall-umount! sys proc target)
   (define ns (process-mnt-ns proc))
   ; look up mount object
-  (define dent (namei sys proc target))
-  (if (err? dent)
-    dent
+  (define path (namei sys proc target))
+  (if (err? path)
+    path
     (begin
       ; remove mount from mount list
-      (define pair (assoc dent (system-mounts sys)))
+      (define pair (assoc path (system-mounts sys)))
       (when (not pair) (error "mount not found!"))
       (set-system-mounts! sys (remove pair (system-mounts sys)))
       ; remove mount from namespace
-      (set-mnt-namespace-children! ns (remove (dentry-mnt dent) (mnt-namespace-children ns))))))
+      (set-mnt-namespace-children! ns (remove (car path) (mnt-namespace-children ns))))))
 
 ; return new proc
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
@@ -194,14 +217,10 @@
       (process-tgid proc)
       pid))
   (define new-proc
-    (process
-      tgid
-      pid
-      ns
-      (process-root proc)
-      (process-pwd proc)
-      (process-fds proc)
-      (process-may-chroot proc)))
+    (struct-copy process proc
+      [tgid tgid]
+      [pid pid]
+      [mnt-ns ns]))
   (sys-add-proc! sys pid new-proc)
   pid)
 
@@ -211,42 +230,42 @@
     (define new-ns (copy-mnt-namespace! sys (process-mnt-ns proc)))
     (set-process-mnt-ns! new-ns)))
 
-(define (syscall-mkdir! sys proc path)
-  (define basename (car (reverse path)))
-  (define dirname (reverse (cdr (reverse path))))
+(define (syscall-mkdir! sys proc name)
+  (define basename (car (reverse name)))
+  (define dirname (reverse (cdr (reverse name))))
   (define parent (namei sys proc dirname))
-  (define parent-ino (dentry-ino parent))
+  (define parent-ino (dentry-ino (cdr parent)))
   (cond
     ; we must resolve parent dir
     [(err? parent) parent]
-    [(not (inode-d? parent-ino)) 'ENOTDIR]
-    [(not (err? (namei sys proc path))) 'EEXIST]
+    [(not (inode/dir? parent-ino)) 'ENOTDIR]
+    [(not (err? (namei sys proc name))) 'EEXIST]
     [else
-      (define new-ino (create-inode-d! (inode-dev parent-ino)))
+      (define new-ino (create-inode/dir! (inode-dev parent-ino)))
       (add-inode-child! parent-ino basename new-ino)]))
 
-(define (syscall-chdir! sys proc path)
-  (define d (namei sys proc path))
+(define (syscall-chdir! sys proc name)
+  (define path (namei sys proc name))
   (cond
-    [(err? d) d]
-    [(not (inode-d? (dentry-ino d))) 'ENOTDIR]
-    [else (set-process-pwd! proc d)]))
+    [(err? path) path]
+    [(not (inode/dir? (dentry-ino (cdr path)))) 'ENOTDIR]
+    [else (set-process-pwd! proc path)]))
 
 (define (syscall-fchdir! sys proc fd)
   (define d (assoc fd (process-fds proc)))
   (cond
     [(not d) 'EBADF]
-    [(not (inode-d? (dentry-ino (cdr d)))) 'ENOTDIR]
-    [else (set-process-pwd! proc (cdr d))]))
+    [(not (inode/dir? (dentry-ino (cddr d)))) 'ENOTDIR]
+    [else (set-process-pwd! proc (cddr d))]))
 
 (define (syscall-open!
-    sys proc path flags
+    sys proc name flags
     [fd (+ 1 (length (process-fds proc)))])
-  (define f (namei sys proc path))
+  (define f (namei sys proc name))
   (cond
     [(err? f) f]
     [else (add-proc-fd! proc fd f)]))
 
-; TODO just a stand-in
+; LATER just a stand-in
 (define (syscall-drop-cap-sys-chroot! sys proc)
   (set-process-may-chroot! proc #f))

@@ -1,5 +1,7 @@
 #lang rosette
 
+(require racket/generic)
+
 (provide (all-defined-out))
 
 ; === STRUCTURES ===
@@ -15,8 +17,10 @@
     [(equal? e 'EPERM) #t]
     [else #f]))
 
-; instead of dentries, we are using (mount . inode) pairs
-(struct dentry (mnt ino) #:transparent)
+; simple immutable dentry
+; ino: inode
+; parent: parent dentry
+(struct dentry (ino parent) #:transparent)
 
 ; a path is just a list of strings
 ; an ugly hack: (list "/") is root, '() is .
@@ -30,13 +34,15 @@
 (struct system (procs mounts devs) #:transparent #:mutable)
 
 ; a process contains:
-; - namespace
-; - root dir (dentry)
-; - working dir (dentry)
-; - fds (list of (fd, dentry)) pairs
-; TODO tgid and pid are separate
-; TODO eventually: users, capabilities
-; TODO eventually: cgroups
+; - tgid
+; - pid
+; - mnt-ns: mount namespace
+; - root: root dir, (mnt . dentry)
+; - pwd: working dir, (mnt . dentry)
+; - fds: list of (fd . (mnt . dentry))
+; - may-chroot: SYS_CAP_CHROOT stand-in
+; LATER: users, capabilities
+; LATER: cgroups
 (struct process (tgid pid mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
 
 ; a mount namespace contains:
@@ -44,103 +50,203 @@
 ; - list of children
 (struct mnt-namespace (root children) #:transparent #:mutable)
 
+; roughly equivalent to struct mount and struct vfsmount
 ; a mount contains:
-; - mount namespace
-; - mountpoint: a dentry
-; - mount root: an inode
+; - mnt-ns: containing mount namespace
+; - dev: device, equivalent to mnt_sb
+; - parent: parent mount
+; - mountpoint: a dentry (in the parent mount)
+; - root: a dentry (typically device root)
 ; this corresponds roughly to the vfsmount struct in linux
-; TODO proc
-; TODO eventually: propagation, i.e. mount groups
-(struct mount (ns dev mountpoint root) #:transparent #:mutable)
+; LATER: propagation, i.e. mount groups
+(struct mount (mnt-ns dev parent mountpoint root) #:transparent #:mutable)
 
+; roughly equivalent to struct super_block
 ; a device contains:
-; - name
-; - num, used to assign numbers to inodes
-; - a list of inodes
-; TODO proc
-(struct device (name num root inodes) #:transparent #:mutable
+; - sys: the containing system
+; - name: any identifying name
+; - num: counter used to assign numbers to inodes
+; - root: the root dentry
+; - inodes: a list of inodes
+(struct device (sys name num root inodes) #:transparent #:mutable
   ;#:methods gen:custom-write
   ;[(define (write-proc self port mode)
   ;  (fprintf port "(device ~v ~v)" (device-name self) (device-num self)))]
   )
+
+(struct proc-device device () #:transparent #:mutable)
 
 ; an inode is either:
 ; - a file, containing nothing
 ; - a directory, containing a list of (name, child inode) pairs
 
 ; an inode contains:
-; - device
-; - number: some identifier, unique within the scope of a device
-; TODO eventually: symlinks
-; TODO eventually: access permissions
+; - device: corresponds to i_sb (super_block)
+; - number: unique identifier within a device; corresponds to i_ino
+; - operations are some mash of inode_operations and file_operations
+; LATER: symlinks
+; LATER: access permissions
 (struct inode (dev num) #:transparent)
+
+(define-generics inode-file
+  [inode-read inode-file] ; get data
+  )
+
+(define-generics inode-dir
+  [inode-lookup inode-dir name] ; look up a child
+  )
+
+(define-generics inode-ns
+  [inode-ns inode-ns] ; get namespace
+  )
 
 ; file inode
 ; data is some arbitrary thing
-(struct inode-f inode (data) #:transparent #:mutable)
+(struct inode/file inode (data) #:transparent #:mutable
+  #:methods gen:inode-file
+  [
+    (define (inode-read ino) (inode/file-data ino))])
 
 ; directory inode
-; parent is the parent inode (perhaps incorrect, but our dentries are stupid for now)
 ; children is a list of (string . inode) pairs
-(struct inode-d inode (parent children) #:transparent #:mutable)
+(struct inode/dir inode (children) #:transparent #:mutable
+  #:methods gen:inode-dir
+  [
+    (define (inode-lookup ino name)
+      (let ([ino (assoc name (inode/dir-children ino))])
+        (if ino (cdr ino) #f)))])
+
+(struct inode/ns inode (ns) #:transparent #:mutable
+  #:methods gen:inode-ns
+  [
+    (define (inode-ns ino) (inode/ns-ns ino))])
+
+(struct inode/proc-root inode () #:transparent #:mutable
+  #:methods gen:inode-dir
+  [
+    (define (inode-lookup ino name)
+      (let* (
+          [dev (inode-dev ino)]
+          [procs (system-procs (device-sys dev))]
+          [pid (string->number name)]
+          [proc (assoc name procs)])
+        (if proc
+          ; create proc toplevel dir inode
+          (begin
+            (define ino (inode/proc-dir dev (device-num dev) proc))
+            (set-device-num! dev (+ 1 (device-num dev)))
+            (set-device-inodes! dev (list* ino (device-inodes dev)))
+            ino)
+          'ENOENT)))])
+
+; TODO this thing is supposed to die when the proc goes away
+(struct inode/proc-dir inode (proc) #:transparent #:mutable
+  #:methods gen:inode-dir
+  [
+    (define (inode-lookup ino name)
+      (let* (
+          [dev (inode-dev ino)]
+          [procs (system-procs (device-sys dev))]
+          [pid (string->number name)]
+          [proc (assoc name procs)])
+        (if (equal? name "ns")
+          (begin
+            (define ino (inode/proc-ns-dir dev (device-num dev) proc))
+            (set-device-num! dev (+ 1 (device-num dev)))
+            (set-device-inodes! dev (list* ino (device-inodes dev)))
+            ino)
+          'ENOENT)))])
+
+(struct inode/proc-ns-dir inode (proc) #:transparent #:mutable
+  #:methods gen:inode-dir
+  [
+    (define (inode-lookup ino name)
+      (let* (
+          [dev (inode-dev ino)]
+          [procs (system-procs (device-sys dev))]
+          [pid (string->number name)]
+          [proc (assoc name procs)])
+        (if (equal? name "mnt")
+          (begin
+            (define ino (inode/ns dev (device-num dev) (process-mnt-ns proc)))
+            (set-device-num! dev (+ 1 (device-num dev)))
+            (set-device-inodes! dev (list* ino (device-inodes dev)))
+            ino)
+          'ENOENT)))])
 
 ; returns a new system containing:
 ; - a single mount
 ; - an empty root directory
 ; - a single process with a default namespace
+; TODO a mounted /proc
 (define (create-sys)
-  (define root-dev (create-device 'a))
-  (define root-inode (device-root root-dev))
-  (define-values (ns root-mount root-dentry)
+  (define sys (system '() '() '()))
+  (define root-dev (create-device! sys 'a))
+  (define root-dent (device-root root-dev))
+  (define-values (mnt-ns root-mount)
     (shared ([ns (mnt-namespace root-mount (list root-mount))]
-             [root-mount (mount root-dev ns root-dentry root-inode)]
-             [root-dentry (dentry root-mount root-inode)])
-      (values ns root-mount root-dentry)))
-  (define proc (process 1 1 ns root-dentry root-dentry '() #t))
-  (system (list (cons 1 proc)) (list (cons root-dentry root-mount)) (list root-dev)))
+             [root-mount (mount ns root-dev root-mount root-dent root-dent)])
+      (values ns root-mount)))
+  (define root-path (cons root-mount root-dent))
+  (define proc (process 1 1 mnt-ns root-path root-path '() #t))
+  (set-system-procs! sys (list (cons 1 proc)))
+  (set-system-mounts! sys (list (cons root-dent root-mount)))
+  sys)
 
-(define (dentry-parent dent)
-  (dentry (dentry-mnt dent) (inode-d-parent (dentry-ino dent))))
+; create empty device
+(define (create-device! sys name)
+  (define dev (device sys name 1 '() '()))
+  (define ino (inode/dir dev 0 '()))
+  (set-device-inodes! dev (list ino))
+  (set-device-root! dev (dentry ino #f)) ; TODO how to make this cyclic?
+  (add-sys-devs! sys dev)
+  dev)
 
-(define (mount-parent mnt)
-  (dentry-mnt (mount-mountpoint mnt)))
-
-(define (create-device name)
-  (shared ([dev (device name 1 ino (list ino))]
-           [ino (inode-d dev 0 '() '())])
-    dev))
+(define (create-proc-device! sys)
+  (define dev (create-device! sys 'proc))
+  (define ino (inode/proc-root dev 0))
+  (set-device-inodes! dev (list ino))
+  (set-device-root! dev (dentry ino #f))
+  dev)
 
 ; create empty file under device
-(define (create-inode-f! dev)
-  (define ino (inode-f dev (device-num dev) 0))
+(define (create-inode/file! dev)
+  (define ino (inode/file dev (device-num dev) 0))
   (set-device-num! dev (+ 1 (device-num dev)))
   (set-device-inodes! dev (list* ino (device-inodes dev)))
   ino)
 
 ; create empty directory under device
-(define (create-inode-d! dev)
-  (define ino (inode-d dev (device-num dev) '() '()))
+(define (create-inode/dir! dev)
+  (define ino (inode/dir dev (device-num dev) '()))
   (set-device-num! dev (+ 1 (device-num dev)))
   (set-device-inodes! dev (list* ino (device-inodes dev)))
   ino)
 
-; add a child to an inode-d
+; create inode representing a namespace
+(define (create-inode/ns! dev ns)
+  (define ino (inode/ns dev (device-num dev) ns))
+  (set-device-num! dev (+ 1 (device-num dev)))
+  (set-device-inodes! dev (list* ino (device-inodes dev)))
+  ino)
+
+; add a child to an inode/dir
 (define (add-inode-child! parent name child)
-  (set-inode-d-parent! child parent)
-  (set-inode-d-children! parent (list* (cons name child) (inode-d-children parent))))
+  (set-inode/dir-children! parent
+    (list* (cons name child) (inode/dir-children parent))))
 
 ; add device or list of devices to sys
 (define (add-sys-devs! sys dev)
-  (define devls (if (list? dev) dev (list dev)))
-  (set-system-devs! sys (append devls (system-devs sys))))
+  (define devs (if (list? dev) dev (list dev)))
+  (set-system-devs! sys (append devs (system-devs sys))))
 
 ; add mount or list of mounts to sys
-(define (add-sys-mounts! sys mount)
-  (define mntls (if (list? mount) mount (list mount)))
+(define (add-sys-mounts! sys mnt)
+  (define mnts (if (list? mnt) mnt (list mnt)))
   (set-system-mounts! sys
     (append
       ; associate each mount with its mountpoint
-      (map (lambda (mnt) (cons (mount-mountpoint mnt) mnt)) mntls)
+      (map (lambda (mnt) (cons (mount-mountpoint mnt) mnt)) mnts)
       (system-mounts sys))))
 
 ; add file to process fd list
