@@ -92,14 +92,12 @@
               ; otherwise, ascend mounts to topmost mountpoint
               (let* (
                   [mountpath (choose-mountpoint cur)]
-                  ; XXX dentry-parent may get weird around root due to #f
                   [parent-dent (dentry-parent (cdr mountpath))]
                   [parent-mnt (car mountpath)]
                   [parent-path (cons parent-mnt parent-dent)])
                 (walk-component (traverse-mounts sys parent-path) (cdr next))))]
           ; just go to parent
           [else
-            ; XXX dentry-parent may get weird around root due to #f
             (let* (
                 [parent-dent (dentry-parent cur-dent)]
                 [parent-path (cons cur-mnt parent-dent)])

@@ -1,6 +1,6 @@
 #lang rosette
 
-(require rosette/lib/angelic rosette/lib/match rosette/lib/synthax "../struct.rkt" "../calls.rkt")
+(require rosette/lib/angelic rosette/lib/match rosette/lib/synthax "../model/struct.rkt" "../model/calls.rkt")
 
 ; set up a system with a chroot jail and try to escape
 (define (escape-setup)

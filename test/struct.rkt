@@ -1,6 +1,6 @@
 #lang rosette
 
-(require "../struct.rkt" "../calls.rkt")
+(require "../model/struct.rkt" "../model/calls.rkt")
 
 ; === TESTS ===
 
@@ -17,7 +17,7 @@
 
   (define empty-mount (mount '() '() '() '() '()))
 
-  (define fake-inode (inode root-dev 1))
+  (define fake-inode (inode 1 root-dev))
   (printf "TEST: lookup-mnt for nonexistent path: ~v\n"
     (lookup-mnt sys (cons empty-mount (dentry fake-inode root-dent))))
 
@@ -66,15 +66,38 @@
   (define dev-c (create-device! sys 'c))
   (define dev-d (create-device! sys 'd))
 
+  ; we make /a, mount 'b on /a, and cd a
   (syscall-mkdir! sys proc (list "a"))
   (syscall-mount! sys proc dev-b (list "a") '())
   (syscall-chdir! sys proc (list "a"))
+  (let* (
+      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
+      [cur-dev (inode-dev cur-ino)])
+    (printf "TEST: pwd dev (should be 'b): ~v\n" (device-name cur-dev)))
+
+  ; we make /a/b, mount 'c on /a/b, mount d on /, and cd b
   (syscall-mkdir! sys proc (list "b"))
   (syscall-mount! sys proc dev-c (list "b") '())
   (syscall-mount! sys proc dev-d '() '())
   (syscall-chdir! sys proc (list "b"))
+  (let* (
+      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
+      [cur-dev (inode-dev cur-ino)])
+    (printf "TEST: pwd dev (should be 'c): ~v\n" (device-name cur-dev)))
+
+  ; we cd .. so we should be in /a (device 'b)
   (syscall-chdir! sys proc (list ".."))
-  (printf "TEST: pwd inode: ~v\n" (dentry-ino (cdr (process-pwd proc))))
+  (let* (
+      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
+      [cur-dev (inode-dev cur-ino)])
+    (printf "TEST: pwd dev (should be 'b): ~v\n" (device-name cur-dev)))
+
+  ; we cd .. so we should be in / (therefore dropping into device 'd)
+  (syscall-chdir! sys proc (list ".."))
+  (let* (
+      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
+      [cur-dev (inode-dev cur-ino)])
+    (printf "TEST: pwd dev (should be 'd): ~v\n" (device-name cur-dev)))
   )
 
 (test-sys2)
