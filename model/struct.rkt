@@ -34,11 +34,11 @@
 ; - a single process with a default namespace
 ; TODO a mounted /proc?
 (define (create-sys)
-  (define sys (system '() '() '()))
+  (define sys (system 1 '() '() '()))
   (define root-dev (create-device! sys 'a))
   (define root-dent (device-root root-dev))
   (define-values (mnt-ns root-mount)
-    (shared ([ns (mnt-namespace root-mount (list root-mount))]
+    (shared ([ns (mnt-namespace 0 root-mount (list root-mount))]
              [root-mount (mount ns root-dev root-mount root-dent root-dent)])
       (values ns root-mount)))
   (define root-path (cons root-mount root-dent))

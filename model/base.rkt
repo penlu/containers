@@ -21,7 +21,11 @@
 ; - parent: parent dentry
 ; XXX this should be immutable but I literally do not know how else to make
 ; the cyclic root dentry
-(struct dentry (ino parent) #:transparent #:mutable)
+(struct dentry (ino parent) #:transparent #:mutable
+  #:methods gen:custom-write
+  [(define (write-proc self port mode)
+    (fprintf port "(dentry ~v ~v)" (dentry-ino self) (dentry-parent self)))]
+  )
 ; if only...
 ;  #:guard
 ;    (lambda (ino parent name)
@@ -38,10 +42,11 @@
 ; slash corresponds to root; each component corresponds to a filename
 
 ; the system contains:
-; - process map
-; - mount list: list of pairs (dentry . mount)
-; - inode list
-(struct system (procs mounts devs) #:transparent #:mutable)
+; - inum: namespace numbering index
+; - procs: process table; list of (pid . process)
+; - mounts: mount list; list of (dentry . mount)
+; - devs: device list; list of device
+(struct system (inum procs mounts devs) #:transparent #:mutable)
 
 ; a process contains:
 ; - tgid
@@ -56,9 +61,10 @@
 (struct process (tgid pid mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
 
 ; a mount namespace contains:
+; - inum: some unique ID number
 ; - root mount
 ; - list of children
-(struct mnt-namespace (root children) #:transparent #:mutable)
+(struct mnt-namespace (inum root children) #:transparent #:mutable)
 
 ; roughly equivalent to struct mount and struct vfsmount
 ; a mount contains:
@@ -78,11 +84,10 @@
 ; - num: counter used to assign numbers to inodes
 ; - root: the root dentry
 ; - inodes: a list of inodes
-(struct device (sys name num root inodes) #:transparent #:mutable
+(struct device (sys name num root inodes) #:transparent #:mutable)
   ;#:methods gen:custom-write
   ;[(define (write-proc self port mode)
   ;  (fprintf port "(device ~v ~v)" (device-name self) (device-num self)))]
-  )
 
 ; an inode contains:
 ; - device: corresponds to i_sb (super_block)
@@ -90,7 +95,13 @@
 ; - operations are some mash of inode_operations and file_operations
 ; LATER: symlinks
 ; LATER: access permissions
-(struct inode (num dev) #:transparent)
+(struct inode (num dev) #:transparent #:mutable
+  #:methods gen:custom-write
+  [(define (write-proc self port mode)
+    (let ([num (inode-num self)]
+          [dev (device-name (inode-dev self))])
+      (fprintf port "(inode ~v ~v)" num dev)))]
+  )
 
 ; an inode is either:
 ; - a file, containing nothing

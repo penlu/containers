@@ -48,13 +48,16 @@
     (define parent-mnt (mount-parent mnt))
     (define mountpoint (mount-mountpoint mnt))
     (cond
-      ; parent mount is same; we are at root
-      [(equal? mnt parent-mnt) (cons mnt mountpoint)]
+      ; we are at root of this mount and parent mount is the same
+      ; this means we are at the root mount and should stop
+      [(and
+        (equal? (cdr path) mountpoint)
+        (equal? mnt parent-mnt)) (cons mnt mountpoint)]
       ; mountpoint is root of the parent mount; we go up again
       [(equal? mountpoint (mount-root parent-mnt))
         (ascend (cons parent-mnt mountpoint))]
       ; we stop here
-      [else (cons mnt mountpoint)])))
+      [else (cons parent-mnt mountpoint)])))
 
 ; performs path traversal, returning a found dentry or an error
 ; namei starts from the process's root
@@ -80,24 +83,27 @@
       [(equal? (car next) ".") (walk-component cur (cdr next))]
       ; .. goes up
       [(equal? (car next) "..")
+        (printf "following ..\n")
         (cond
           ; at process root; don't ascend
           [(equal? cur (process-root proc))
+            (printf "at process root\n")
             (walk-component (process-root proc) (cdr next))]
-          ; at root of current mount
+          ; at root of current mount; ascend to topmost mountpoint
           [(equal? cur-dent (mount-root cur-mnt))
-            (if (equal? (mount-parent cur-mnt) cur-mnt)
-              ; at root of actual root mount
-              (walk-component cur (cdr next))
-              ; otherwise, ascend mounts to topmost mountpoint
-              (let* (
-                  [mountpath (choose-mountpoint cur)]
-                  [parent-dent (dentry-parent (cdr mountpath))]
-                  [parent-mnt (car mountpath)]
-                  [parent-path (cons parent-mnt parent-dent)])
-                (walk-component (traverse-mounts sys parent-path) (cdr next))))]
-          ; just go to parent
+            (printf "at mount root\n")
+            (let* (
+                [mountpath (choose-mountpoint cur)]
+                [parent-dent (dentry-parent (cdr mountpath))]
+                [parent-mnt (car mountpath)]
+                [parent-path (cons parent-mnt parent-dent)])
+              (printf "ascended to ~v\n" parent-dent)
+              (walk-component (traverse-mounts sys parent-path) (cdr next)))]
+          ; no mount situation: just go to parent
           [else
+            (printf "cur-dent: ~v\n" cur-dent)
+            (printf "mount root: ~v\n" (mount-root cur-mnt))
+            (printf "normal case\n")
             (let* (
                 [parent-dent (dentry-parent cur-dent)]
                 [parent-path (cons cur-mnt parent-dent)])
@@ -112,13 +118,16 @@
             (let* (
                 [dent (dentry found (cdr cur))]
                 [next-path (cons cur-mnt dent)])
-              (walk-component (traverse-mounts sys next-path) (cdr next)))))])))
+              (walk-component (traverse-mounts sys next-path) (cdr next)))))]
+      )))
 
 ; copy each mount in a mount namespace
 ; returns new mnt-namespace
 ; modifies sys to include newly created mounts
 (define (copy-mnt-namespace! sys ns)
-  (define new-ns (mnt-namespace '() '()))
+  (define inum (system-inum sys))
+  (set-system-inum! sys (+ 1 (system-inum sys)))
+  (define new-ns (mnt-namespace inum '() '()))
   ; iterate over all child mounts of namespace
   ; make a copy of each child mount under the new namespace
   ; associate new mounts with corresponding old mounts

@@ -54,6 +54,8 @@
 
   (define path-bar (namei sys proc (list "foo" "bar")))
   (printf "TEST: inode of namei with path /foo/bar: ~v\n" (dentry-ino (cdr path-bar)))
+
+  (printf "TEST COMPLETE\n\n")
   )
 
 (test-sys)
@@ -67,37 +69,40 @@
   (define dev-d (create-device! sys 'd))
 
   ; we make /a, mount 'b on /a, and cd a
+  ; we should end up at root of device 'b
   (syscall-mkdir! sys proc (list "a"))
+  (printf "DEBUG: /a dentry:\n~v\n\n" (cdr (namei sys proc (list "/" "a"))))
   (syscall-mount! sys proc dev-b (list "a") '())
   (syscall-chdir! sys proc (list "a"))
-  (let* (
-      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
-      [cur-dev (inode-dev cur-ino)])
-    (printf "TEST: pwd dev (should be 'b): ~v\n" (device-name cur-dev)))
+  (printf "DEBUG: mount root dentry of 'b:\n~v\n\n" (mount-root (cdar (system-mounts sys))))
+  (printf "DEBUG: dentry after entering 'b:\n~v\n\n" (cdr (process-pwd proc)))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'b): ~v\n" cur-ino))
 
   ; we make /a/b, mount 'c on /a/b, mount d on /, and cd b
+  ; we should end up at root of device 'c
   (syscall-mkdir! sys proc (list "b"))
   (syscall-mount! sys proc dev-c (list "b") '())
+  (printf "DEBUG: mountpoint dentry of 'c:\n~v\n\n" (mount-mountpoint (cdar (system-mounts sys))))
+  (printf "DEBUG: parent of mountpoint dentry of 'c:\n~v\n\n"
+    (dentry-parent (mount-mountpoint (cdar (system-mounts sys)))))
   (syscall-mount! sys proc dev-d '() '())
   (syscall-chdir! sys proc (list "b"))
-  (let* (
-      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
-      [cur-dev (inode-dev cur-ino)])
-    (printf "TEST: pwd dev (should be 'c): ~v\n" (device-name cur-dev)))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'c): ~v\n" cur-ino))
 
-  ; we cd .. so we should be in /a (device 'b)
+  ; we cd .. so we should end up at root of device 'b (/a)
   (syscall-chdir! sys proc (list ".."))
-  (let* (
-      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
-      [cur-dev (inode-dev cur-ino)])
-    (printf "TEST: pwd dev (should be 'b): ~v\n" (device-name cur-dev)))
+  (printf "DEBUG: current dentry:\n~v\n\n" (cdr (process-pwd proc)))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'b): ~v\n" cur-ino))
 
   ; we cd .. so we should be in / (therefore dropping into device 'd)
   (syscall-chdir! sys proc (list ".."))
-  (let* (
-      [cur-ino (dentry-ino (cdr (process-pwd proc)))]
-      [cur-dev (inode-dev cur-ino)])
-    (printf "TEST: pwd dev (should be 'd): ~v\n" (device-name cur-dev)))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 'd): ~v\n" cur-ino))
+
+  (printf "TEST COMPLETE\n\n")
   )
 
 (test-sys2)
