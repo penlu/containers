@@ -61,6 +61,8 @@
 
 ; performs path traversal, returning a found dentry or an error
 ; namei starts from the process's root
+; XXX weird point of interpretation: '() is not (list ".")
+; XXX linux is weird about this too; further investigation needed
 (define (namei sys proc name)
   ; start from the process root
   ; iterate over name; for each entry:
@@ -79,31 +81,25 @@
       [(null? next) cur]
       ; otherwise we had better be a directory
       [(not (inode-dir? cur-ino)) 'ENOTDIR]
-      ; . does nothing (?)
-      [(equal? (car next) ".") (walk-component cur (cdr next))]
+      ; . goes into mount when . was mounted upon
+      [(equal? (car next) ".")
+        (walk-component (traverse-mounts sys cur) (cdr next))]
       ; .. goes up
       [(equal? (car next) "..")
-        (printf "following ..\n")
         (cond
           ; at process root; don't ascend
           [(equal? cur (process-root proc))
-            (printf "at process root\n")
             (walk-component (process-root proc) (cdr next))]
           ; at root of current mount; ascend to topmost mountpoint
           [(equal? cur-dent (mount-root cur-mnt))
-            (printf "at mount root\n")
             (let* (
                 [mountpath (choose-mountpoint cur)]
                 [parent-dent (dentry-parent (cdr mountpath))]
                 [parent-mnt (car mountpath)]
                 [parent-path (cons parent-mnt parent-dent)])
-              (printf "ascended to ~v\n" parent-dent)
               (walk-component (traverse-mounts sys parent-path) (cdr next)))]
-          ; no mount situation: just go to parent
+          ; no root encounters: just go to parent
           [else
-            (printf "cur-dent: ~v\n" cur-dent)
-            (printf "mount root: ~v\n" (mount-root cur-mnt))
-            (printf "normal case\n")
             (let* (
                 [parent-dent (dentry-parent cur-dent)]
                 [parent-path (cons cur-mnt parent-dent)])
@@ -204,13 +200,21 @@
   (define path (namei sys proc target))
   (if (err? path)
     path
-    (begin
-      ; remove mount from mount list
-      (define pair (assoc path (system-mounts sys)))
-      (when (not pair) (error "mount not found!"))
-      (set-system-mounts! sys (remove pair (system-mounts sys)))
-      ; remove mount from namespace
-      (set-mnt-namespace-children! ns (remove (car path) (mnt-namespace-children ns))))))
+    (cond
+      [(not (equal? (cdr path) (mount-root (car path)))) 'EINVAL]
+      ; TODO refuse to remove root mount
+      [else (let* (
+          [mnt (car path)]
+          [mnt-entry (cons (mount-mountpoint mnt) mnt)])
+        (when (not (member mnt-entry (system-mounts sys)))
+          (error "mount missing from system-mounts!"))
+        (when (not (member (car path) (mnt-namespace-children ns)))
+          (error "mount missing from mnt-namespace-children!"))
+        ; remove mount from mount list
+        (set-system-mounts! sys (remove mnt-entry (system-mounts sys)))
+        ; remove mount from namespace
+        (set-mnt-namespace-children! ns (remove (car path) (mnt-namespace-children ns))))]
+      )))
 
 ; return new proc
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag

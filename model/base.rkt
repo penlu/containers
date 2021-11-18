@@ -11,6 +11,7 @@
   (cond
     [(equal? e 'EBADF) #t]
     [(equal? e 'EEXIST) #t]
+    [(equal? e 'EINVAL) #t]
     [(equal? e 'ENOENT) #t]
     [(equal? e 'ENOTDIR) #t]
     [(equal? e 'EPERM) #t]

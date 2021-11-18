@@ -68,39 +68,65 @@
   (define dev-c (create-device! sys 'c))
   (define dev-d (create-device! sys 'd))
 
-  ; we make /a, mount 'b on /a, and cd a
+  ; we mkdir a, mount 'b on a, and cd a
   ; we should end up at root of device 'b
   (syscall-mkdir! sys proc (list "a"))
-  (printf "DEBUG: /a dentry:\n~v\n\n" (cdr (namei sys proc (list "/" "a"))))
   (syscall-mount! sys proc dev-b (list "a") '())
   (syscall-chdir! sys proc (list "a"))
-  (printf "DEBUG: mount root dentry of 'b:\n~v\n\n" (mount-root (cdar (system-mounts sys))))
-  (printf "DEBUG: dentry after entering 'b:\n~v\n\n" (cdr (process-pwd proc)))
   (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
     (printf "TEST: pwd ino (should be 0 'b): ~v\n" cur-ino))
 
-  ; we make /a/b, mount 'c on /a/b, mount d on /, and cd b
-  ; we should end up at root of device 'c
+  ; we make b, mount 'c on b, mount d on . (i.e. /a)
   (syscall-mkdir! sys proc (list "b"))
   (syscall-mount! sys proc dev-c (list "b") '())
-  (printf "DEBUG: mountpoint dentry of 'c:\n~v\n\n" (mount-mountpoint (cdar (system-mounts sys))))
-  (printf "DEBUG: parent of mountpoint dentry of 'c:\n~v\n\n"
-    (dentry-parent (mount-mountpoint (cdar (system-mounts sys)))))
-  (syscall-mount! sys proc dev-d '() '())
+  (syscall-mount! sys proc dev-d (list ".") '())
+
+  ; we now cd b
+  ; we should end up at root of device 'c
   (syscall-chdir! sys proc (list "b"))
   (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
     (printf "TEST: pwd ino (should be 0 'c): ~v\n" cur-ino))
 
-  ; we cd .. so we should end up at root of device 'b (/a)
+  ; we cd .. so we should end up at root of device 'd (atop /a)
   (syscall-chdir! sys proc (list ".."))
-  (printf "DEBUG: current dentry:\n~v\n\n" (cdr (process-pwd proc)))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'd): ~v\n" cur-ino))
+
+  ; we cd .. so we should be in / (therefore dropping into device 'a)
+  (syscall-chdir! sys proc (list ".."))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'a): ~v\n" cur-ino))
+
+  ; we unmount 'd from a and cd a
+  ; we should again end up at root of device 'b
+  (printf "TEST: umount returned ~v\n" (syscall-umount! sys proc (list "a")))
+  (syscall-chdir! sys proc (list "a"))
   (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
     (printf "TEST: pwd ino (should be 0 'b): ~v\n" cur-ino))
 
-  ; we cd .. so we should be in / (therefore dropping into device 'd)
+  ; again mount d on . (i.e. /a) and cd .
+  ; now we should end up in 'd
+  (syscall-mount! sys proc dev-d (list ".") '())
+  (syscall-chdir! sys proc (list "."))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'd): ~v\n" cur-ino))
+
+  ; back to 'a and umount a
   (syscall-chdir! sys proc (list ".."))
   (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
-    (printf "TEST: pwd ino (should be 'd): ~v\n" cur-ino))
+    (printf "TEST: pwd ino (should be 0 'a): ~v\n" cur-ino))
+  (printf "TEST: umount returned ~v\n" (syscall-umount! sys proc (list "a")))
+
+  ; TODO outstanding bug: this will fail
+  ; cd a, then mount 'd on . and cd ./b (to be distinguished from cd b)
+  (syscall-mount! sys proc dev-d (list ".") '())
+  (printf "TEST: chdir returned ~v\n" (syscall-chdir! sys proc (list "." "b")))
+  ; testing on my linux shows that this just works, as does cd b
+  ; so somehow cd . and cd "" enter 'd, but cd ./b does not
+  ; kernel code seems to suggest step_into (hence eventually traverse_mounts)
+  ; WILL be called in the case of cd ./b, but empirically not...?
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'a): ~v\n" cur-ino))
 
   (printf "TEST COMPLETE\n\n")
   )
