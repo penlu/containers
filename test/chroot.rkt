@@ -7,7 +7,7 @@
   (define sys (create-sys))
   (define proc (sys-get-proc sys 1))
 
-  (define mount-dev (create-device 'b))
+  (define mount-dev (create-device! sys 'b))
 
   ; make dir /a and mount an empty fs
   (syscall-mkdir! sys proc (list "a"))
@@ -17,8 +17,8 @@
   (syscall-chdir! sys proc (list "a"))
   (syscall-chroot! sys proc '())
 
-  (printf "TEST: pwd inode: ~v\n" (dentry-ino (process-pwd proc)))
-  (printf "TEST: root inode: ~v\n" (dentry-ino (process-root proc)))
+  (printf "TEST: pwd inode: ~v\n" (dentry-ino (cdr (process-pwd proc))))
+  (printf "TEST: root inode: ~v\n" (dentry-ino (cdr (process-root proc))))
 
   (values sys proc))
 
@@ -69,22 +69,23 @@
   (syscall-open! sys proc '() '())
   (printf "TEST: opened: ~v\n" proc)
   (syscall-mkdir! sys proc (list "b"))
-  (printf "TEST: mkdir: ~v\n" (dentry-ino (process-pwd proc)))
+  (printf "TEST: mkdir: ~v\n" (dentry-ino (cdr (process-pwd proc))))
   (syscall-chroot! sys proc (list "b"))
-  (printf "TEST: chroot: ~v\n" (dentry-ino (process-root proc)))
+  (printf "TEST: chroot: ~v\n" (dentry-ino (cdr (process-root proc))))
   (syscall-fchdir! sys proc 1)
-  (printf "TEST: fchdir: ~v\n" (dentry-ino (process-pwd proc)))
+  (printf "TEST: fchdir: ~v\n" (dentry-ino (cdr (process-pwd proc))))
   (syscall-chdir! sys proc (list ".."))
-  (printf "TEST: chdir: ~v\n" (dentry-ino (process-pwd proc))))
+  (printf "TEST: chdir: ~v\n" (dentry-ino (cdr (process-pwd proc)))))
 
 (test-escape)
 
+; TODO fix, this is broken
 (define (synthesize-escape)
   (define-values (sys proc) (escape-setup))
   (define calls (Calls 3))
 
   (interpret-calls sys proc calls)
-  (assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
+  (assert (equal? 'a (device-name (inode-dev (dentry-ino (cdr (process-pwd proc)))))))
   (define model (solve (assert #t)))
   (if (sat? model)
     (printf "escaped chroot: ~v\n:D\n" (evaluate calls model))
@@ -93,13 +94,14 @@
 
 (synthesize-escape)
 
+; TODO fix, this is broken
 (define (synthesize-no-escape)
   (define-values (sys proc) (escape-setup))
   (syscall-drop-cap-sys-chroot! sys proc)
   (define calls (Calls 6))
 
   (interpret-calls sys proc calls)
-  (assert (equal? 'a (device-name (inode-dev (dentry-ino (process-pwd proc))))))
+  (assert (equal? 'a (device-name (inode-dev (dentry-ino (cdr (process-pwd proc)))))))
   (define model (solve (assert #t)))
   (if (sat? model)
     (printf "escaped chroot?! ~v\n:(\n" (evaluate calls model))

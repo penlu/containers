@@ -4,9 +4,9 @@
 
 ; === TESTS ===
 
-; returns a system with a directory mounted on /foo which contains a directory bar
-; so there is a /foo/bar
 (define (test-sys)
+  ; create a system with a directory mounted on /foo which contains a directory bar
+  ; so there is a /foo/bar
   (define sys (create-sys))
   (define proc (sys-get-proc sys 1))
   (define ns (process-mnt-ns proc))
@@ -60,7 +60,7 @@
 
 (test-sys)
 
-(define (test-sys2)
+(define (test-calls)
   (define sys (create-sys))
   (define proc (sys-get-proc sys 1))
 
@@ -119,16 +119,20 @@
 
   ; TODO outstanding bug: this will fail
   ; cd a, then mount 'd on . and cd ./b (to be distinguished from cd b)
+  (syscall-chdir! sys proc (list "a"))
+  (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
+    (printf "TEST: pwd ino (should be 0 'b): ~v\n" cur-ino))
   (syscall-mount! sys proc dev-d (list ".") '())
+  (printf "KNOWN BUG:\n")
   (printf "TEST: chdir returned ~v\n" (syscall-chdir! sys proc (list "." "b")))
   ; testing on my linux shows that this just works, as does cd b
   ; so somehow cd . and cd "" enter 'd, but cd ./b does not
   ; kernel code seems to suggest step_into (hence eventually traverse_mounts)
   ; WILL be called in the case of cd ./b, but empirically not...?
   (let ([cur-ino (dentry-ino (cdr (process-pwd proc)))])
-    (printf "TEST: pwd ino (should be 0 'a): ~v\n" cur-ino))
+    (printf "TEST: pwd ino (should be 0 'c): ~v\n" cur-ino))
 
   (printf "TEST COMPLETE\n\n")
   )
 
-(test-sys2)
+(test-calls)

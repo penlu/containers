@@ -1,7 +1,6 @@
 #lang rosette
 
 (require "struct.rkt")
-
 (provide (all-defined-out))
 
 ; === METHODS ===
@@ -154,14 +153,14 @@
   (add-sys-mounts! sys mount-copies)
   new-ns)
 
-; === OPERATIONS ===
+; === SYSCALLS ===
 
-; all ops take the following two arguments:
+; all syscalls take the following two arguments:
 ; - sys: system state, which includes:
 ;   - the mount hashtable (a list of `mount`s)
 ;   - file system state (a list of `inode`s)
 ; - proc: the calling process
-; LATER: how valid is the serializability assumption anyway?
+; LATER: (much later) how valid is the serializability assumption anyway?
 
 ; returns an error or nothing
 (define (syscall-chroot! sys proc path)
@@ -249,7 +248,7 @@
   (cond
     ; we must resolve parent dir
     [(err? parent) parent]
-    [(not (inode/dir? parent-ino)) 'ENOTDIR]
+    [(not (inode-dir? parent-ino)) 'ENOTDIR]
     [(not (err? (namei sys proc name))) 'EEXIST]
     [else
       (define new-ino (create-inode/dir! (inode-dev parent-ino)))
@@ -259,15 +258,16 @@
   (define path (namei sys proc name))
   (cond
     [(err? path) path]
-    [(not (inode/dir? (dentry-ino (cdr path)))) 'ENOTDIR]
+    [(not (inode-dir? (dentry-ino (cdr path)))) 'ENOTDIR]
     [else (set-process-pwd! proc path)]))
 
 (define (syscall-fchdir! sys proc fd)
   (define d (assoc fd (process-fds proc)))
+  (printf "fchdir (cddr d): ~v\n" (cddr d))
   (cond
     [(not d) 'EBADF]
-    [(not (inode/dir? (dentry-ino (cddr d)))) 'ENOTDIR]
-    [else (set-process-pwd! proc (cddr d))]))
+    [(not (inode-dir? (dentry-ino (cddr d)))) 'ENOTDIR]
+    [else (set-process-pwd! proc d)]))
 
 (define (syscall-open!
     sys proc name flags
@@ -280,3 +280,5 @@
 ; LATER just a stand-in
 (define (syscall-drop-cap-sys-chroot! sys proc)
   (set-process-may-chroot! proc #f))
+
+; TODO setns

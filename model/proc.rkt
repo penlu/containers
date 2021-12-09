@@ -3,8 +3,6 @@
 (require "base.rkt")
 (provide (all-defined-out))
 
-(struct proc-device device () #:transparent #:mutable)
-
 (struct inode/ns inode (ns) #:transparent #:mutable
   #:methods gen:inode-ns
   [
@@ -62,4 +60,3 @@
             (set-device-inodes! dev (list* ino (device-inodes dev)))
             ino)
           'ENOENT)))])
-

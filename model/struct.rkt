@@ -32,19 +32,36 @@
 ; - a single mount
 ; - an empty root directory
 ; - a single process with a default namespace
-; TODO a mounted /proc?
 (define (create-sys)
   (define sys (system 1 '() '() '()))
+
+  ; add a root device and a proc device
   (define root-dev (create-device! sys 'a))
   (define root-dent (device-root root-dev))
-  (define-values (mnt-ns root-mount)
-    (shared ([ns (mnt-namespace 0 root-mount (list root-mount))]
-             [root-mount (mount ns root-dev root-mount root-dent root-dent)])
-      (values ns root-mount)))
+  (define procfs-dev (create-proc-device! sys))
+  (define procfs-dent (device-root procfs-dev))
+  (set-system-devs! sys (list root-dev procfs-dev))
+
+  ; add /proc dir
+  (define proc-dir (create-inode/dir! root-dev))
+  (add-inode-child! (dentry-ino root-dent) "proc" proc-dir)
+
+  ; mount root and proc devices under a base mount namespace
+  ; TODO these should be helper fxns instead of manual manipulation
+  (define procfs-mp (dentry proc-dir root-dent))
+  (define-values (mnt-ns root-mount procfs-mount)
+    (shared ([ns (mnt-namespace 0 root-mount (list root-mount procfs-mount))]
+             [root-mount (mount ns root-dev root-mount root-dent root-dent)]
+             [procfs-mount (mount ns procfs-dev root-mount procfs-mp procfs-dent)])
+      (values ns root-mount procfs-mount)))
+  (set-system-mounts! sys (list
+    (cons root-dent root-mount)
+    (cons procfs-mp procfs-mount)))
+
+  ; create a process with pwd /
   (define root-path (cons root-mount root-dent))
   (define proc (process 1 1 mnt-ns root-path root-path '() #t))
   (set-system-procs! sys (list (cons 1 proc)))
-  (set-system-mounts! sys (list (cons root-dent root-mount)))
   sys)
 
 ; create empty device
