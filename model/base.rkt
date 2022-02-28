@@ -24,18 +24,23 @@
 ; the cyclic root dentry
 (struct dentry (ino parent) #:transparent #:mutable
   #:methods gen:custom-write
-  [(define (write-proc self port mode)
-    (fprintf port "(dentry ~v ~v)" (dentry-ino self) (dentry-parent self)))]
+  [
+    (define (write-proc self port mode)
+      (fprintf port
+        "(dentry ~v ~v)"
+        (dentry-ino self)
+        (dentry-parent self)))]
+  ;#:guard (lambda (ino parent type-name)
+  ;  (for*/all ([ino ino] [parent parent])
+  ;    (cond
+  ;      [(and (not (inode? ino)) ino)
+  ;        (printf "ino is ~v\n" ino)
+  ;        (error "dentry-ino not inode?")]
+  ;      ; if only...
+  ;      ;[(not (dentry? parent)) (error "dentry-parent not dentry?")]
+  ;      [else (values ino parent)]
+  ;      )))
   )
-; if only...
-;  #:guard
-;    (lambda (ino parent name)
-;      (cond
-;        [(not (inode? ino)) (error "dentry-ino not inode?")]
-;        [(not (dentry? parent)) (error "dentry-parent not dentry?")]
-;        [else (values ino parent)]
-;        ))
-;  )
 
 ; a path is just a list of strings
 ; an ugly hack: (list "/") is root, '() is .

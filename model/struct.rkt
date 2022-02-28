@@ -47,7 +47,6 @@
   (add-inode-child! (dentry-ino root-dent) "proc" proc-dir)
 
   ; mount root and proc devices under a base mount namespace
-  ; TODO these should be helper fxns instead of manual manipulation
   (define procfs-mp (dentry proc-dir root-dent))
   (define-values (mnt-ns root-mount procfs-mount)
     (shared ([ns (mnt-namespace 0 root-mount (list root-mount procfs-mount))]
@@ -80,7 +79,6 @@
   (set-device-root! dev (create-root-dentry ino))
   dev)
 
-; TODO don't do this; just expose an add method
 ; create empty file under device
 (define (create-inode/file! dev)
   (define ino (inode/file (device-num dev) dev 0))
@@ -121,12 +119,16 @@
       (map (lambda (mnt) (cons (mount-mountpoint mnt) mnt)) mnts)
       (system-mounts sys))))
 
+(define (proc-get-fd proc fd)
+  (let ([f (assoc fd (process-fds proc))])
+    (if f (cdr f) #f)))
+
 ; add file to process fd list
 ; return the fd
-(define (add-proc-fd! proc fd f)
-  ; TODO fail on duplicate, probably
-  (define fds (process-fds proc))
-  ;(define fd (+ 1 (length fds)))
+(define (proc-add-fd! proc fd f)
+  ; fail on duplicate
+  (when (proc-get-fd proc fd)
+    (error (format "fd ~v already exists!" fd)))
   (set-process-fds! proc
     (list*
       (cons fd f)
@@ -138,7 +140,9 @@
     (if proc (cdr proc) #f)))
 
 (define (sys-add-proc! sys pid proc)
-  ; TODO fail on duplicate, probably
+  ; fail on duplicate
+  (when (sys-get-proc sys pid)
+    (error (format "pid ~v already exists!" pid)))
   (set-system-procs! sys
     (list*
       (cons pid proc)

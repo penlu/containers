@@ -72,49 +72,51 @@
   (define start-path (if is-rel (process-pwd proc) (process-root proc)))
   (define start-name (if is-rel name (cdr name)))
   (let walk-component ([cur start-path] [next start-name])
-    (define cur-mnt (car cur))
-    (define cur-dent (cdr cur))
-    (define cur-ino (dentry-ino cur-dent))
-    (cond
-      ; done walking; return current path
-      [(null? next) cur]
-      ; otherwise we had better be a directory
-      [(not (inode-dir? cur-ino)) 'ENOTDIR]
-      ; . goes into mount when . was mounted upon
-      [(equal? (car next) ".")
-        (walk-component (traverse-mounts sys cur) (cdr next))]
-      ; .. goes up
-      [(equal? (car next) "..")
-        (cond
-          ; at process root; don't ascend
-          [(equal? cur (process-root proc))
-            (walk-component (process-root proc) (cdr next))]
-          ; at root of current mount; ascend to topmost mountpoint
-          [(equal? cur-dent (mount-root cur-mnt))
-            (let* (
-                [mountpath (choose-mountpoint cur)]
-                [parent-dent (dentry-parent (cdr mountpath))]
-                [parent-mnt (car mountpath)]
-                [parent-path (cons parent-mnt parent-dent)])
-              (walk-component (traverse-mounts sys parent-path) (cdr next)))]
-          ; no root encounters: just go to parent
-          [else
-            (let* (
-                [parent-dent (dentry-parent cur-dent)]
-                [parent-path (cons cur-mnt parent-dent)])
-              (walk-component (traverse-mounts sys parent-path) (cdr next)))])]
-      ; normal path; look for child
-      [else
-        (let ([found (inode-lookup cur-ino (car next))])
-          (if (not found)
-            ; no child with appropriate name; error
-            'ENOENT
-            ; drop into found child
-            (let* (
-                [dent (dentry found (cdr cur))]
-                [next-path (cons cur-mnt dent)])
-              (walk-component (traverse-mounts sys next-path) (cdr next)))))]
-      )))
+    (for*/all (
+        [cur cur]
+        [cur-mnt (car cur)]
+        [cur-dent (cdr cur)]
+        [cur-ino (dentry-ino cur-dent)])
+      (cond
+        ; done walking; return current path
+        [(null? next) cur]
+        ; otherwise we had better be a directory
+        [(not (inode-dir? cur-ino)) 'ENOTDIR]
+        ; . goes into mount when . was mounted upon
+        [(equal? (car next) ".")
+          (walk-component (traverse-mounts sys cur) (cdr next))]
+        ; .. goes up
+        [(equal? (car next) "..")
+          (cond
+            ; at process root; don't ascend
+            [(equal? cur (process-root proc))
+              (walk-component (process-root proc) (cdr next))]
+            ; at root of current mount; ascend to topmost mountpoint
+            [(equal? cur-dent (mount-root cur-mnt))
+              (let* (
+                  [mountpath (choose-mountpoint cur)]
+                  [parent-dent (dentry-parent (cdr mountpath))]
+                  [parent-mnt (car mountpath)]
+                  [parent-path (cons parent-mnt parent-dent)])
+                (walk-component (traverse-mounts sys parent-path) (cdr next)))]
+            ; no root encounters: just go to parent
+            [else
+              (let* (
+                  [parent-dent (dentry-parent cur-dent)]
+                  [parent-path (cons cur-mnt parent-dent)])
+                (walk-component (traverse-mounts sys parent-path) (cdr next)))])]
+        ; normal path; look for child
+        [else
+          (let ([found (inode-lookup cur-ino (car next))])
+            (if (not found)
+              ; no child with appropriate name; error
+              'ENOENT
+              ; drop into found child
+              (let* (
+                  [dent (dentry found (cdr cur))]
+                  [next-path (cons cur-mnt dent)])
+                (walk-component (traverse-mounts sys next-path) (cdr next)))))]
+        ))))
 
 ; copy each mount in a mount namespace
 ; returns new mnt-namespace
@@ -244,29 +246,33 @@
   (define basename (car (reverse name)))
   (define dirname (reverse (cdr (reverse name))))
   (define parent (namei sys proc dirname))
-  (define parent-ino (dentry-ino (cdr parent)))
-  (cond
-    ; we must resolve parent dir
-    [(err? parent) parent]
-    [(not (inode-dir? parent-ino)) 'ENOTDIR]
-    [(not (err? (namei sys proc name))) 'EEXIST]
-    [else
-      (define new-ino (create-inode/dir! (inode-dev parent-ino)))
-      (add-inode-child! parent-ino basename new-ino)]))
+  (for*/all ([parent parent] [parent-dent (cdr parent)])
+    (define parent-ino (dentry-ino parent-dent))
+    (when (union? parent-ino) (error "mkdir: parent-ino is union, needs handling"))
+    (cond
+      ; we must resolve parent dir
+      [(err? parent) parent]
+      [(not (inode-dir? parent-ino)) 'ENOTDIR]
+      [(not (err? (namei sys proc name))) 'EEXIST]
+      [else
+        (define new-ino (create-inode/dir! (inode-dev parent-ino)))
+        (add-inode-child! parent-ino basename new-ino)])))
 
 (define (syscall-chdir! sys proc name)
   (define path (namei sys proc name))
-  (cond
-    [(err? path) path]
-    [(not (inode-dir? (dentry-ino (cdr path)))) 'ENOTDIR]
-    [else (set-process-pwd! proc path)]))
+  (for*/all ([path path])
+    (if (err? path)
+      path
+      (for/all ([dent (cdr path)])
+        (if (not (inode-dir? (dentry-ino dent)))
+          'ENOTDIR
+          (set-process-pwd! proc (cons (car path) dent)))))))
 
 (define (syscall-fchdir! sys proc fd)
-  (define d (assoc fd (process-fds proc)))
-  (printf "fchdir (cddr d): ~v\n" (cddr d))
+  (define d (proc-get-fd proc fd))
   (cond
     [(not d) 'EBADF]
-    [(not (inode-dir? (dentry-ino (cddr d)))) 'ENOTDIR]
+    [(not (inode-dir? (dentry-ino (cdr d)))) 'ENOTDIR]
     [else (set-process-pwd! proc d)]))
 
 (define (syscall-open!
@@ -275,10 +281,23 @@
   (define f (namei sys proc name))
   (cond
     [(err? f) f]
-    [else (add-proc-fd! proc fd f)]))
+    [else (proc-add-fd! proc fd f)]))
 
 ; LATER just a stand-in
 (define (syscall-drop-cap-sys-chroot! sys proc)
   (set-process-may-chroot! proc #f))
 
-; TODO setns
+; LATER capabilities
+(define (syscall-setns! sys proc fd nstype)
+  (define f (proc-get-fd proc fd))
+  (cond
+    [(not f) 'EBADF]
+    [(not (inode-ns? (dentry-ino (cdr f)))) 'EINVAL]
+    [else
+      (define ns (inode-ns (dentry-ino (cdr f))))
+      (cond
+        [(and (or (equal? nstype 'CLONE_NEWNS) (equal? nstype 0))
+              (mnt-namespace? ns))
+          (set-process-mnt-ns! proc ns)]
+        ; more ns types go here
+        [else 'EINVAL])]))

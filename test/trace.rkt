@@ -5,8 +5,8 @@
   rosette/lib/angelic
   rosette/lib/match
   rosette/lib/synthax
-  "../struct.rkt"
-  "../calls.rkt")
+  "../model/struct.rkt"
+  "../model/calls.rkt")
 
 (struct trace (pid ts) #:transparent)
 (struct trace-syscall trace (name args retval) #:transparent)
@@ -42,19 +42,20 @@
   (define proc (sys-get-proc sys pid))
   (match tr
     [(trace-syscall pid ts "clone" args retval)
-      (printf "CLONE: ~v ~v ~v = ~v\n" pid ts flags retval)
+      (printf "CLONE: ~v ~v ~v = ~v\n" pid ts args retval)
       (let ([flags (cdr (assoc 'flags args))])
         (syscall-clone! sys proc flags retval)
         )]
     [(trace-syscall pid ts "setns" (list fd flags) retval)
-      (printf "SETNS: ~v ~v ~v ~v = ~v\n" pid ts fd flags retval)]
-    [(trace-syscall pid ts "open" (list path flags) retval)
-      (printf "OPEN: ~v ~v ~v ~v = ~v\n" pid ts path flags retval)
-      (syscall-open! sys proc path flags retval)]
-    [(trace-syscall pid ts "openat" (list dirfd path flags) retval)
-      (printf "OPENAT: ~v ~v ~v ~v ~v = ~v\n" pid ts dirfd path flags retval)]
-    [(trace-syscall pid ts "openat" (list dirfd path flags mode) retval)
-      (printf "OPENAT: ~v ~v ~v ~v ~v ~v = ~v\n" pid ts dirfd path flags mode retval)]
+      (printf "SETNS: ~v ~v ~v ~v = ~v\n" pid ts fd flags retval)
+      (syscall-setns! sys proc fd flags)]
+    ;[(trace-syscall pid ts "open" (list path flags) retval)
+    ;  (printf "OPEN: ~v ~v ~v ~v = ~v\n" pid ts path flags retval)
+    ;  (syscall-open! sys proc path flags retval)]
+    ;[(trace-syscall pid ts "openat" (list dirfd path flags) retval)
+    ;  (printf "OPENAT: ~v ~v ~v ~v ~v = ~v\n" pid ts dirfd path flags retval)]
+    ;[(trace-syscall pid ts "openat" (list dirfd path flags mode) retval)
+    ;  (printf "OPENAT: ~v ~v ~v ~v ~v ~v = ~v\n" pid ts dirfd path flags mode retval)]
     [_ '()]
     ))
 
