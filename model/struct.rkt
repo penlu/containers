@@ -53,6 +53,8 @@
              [root-mount (mount ns root-dev root-mount root-dent root-dent)]
              [procfs-mount (mount ns procfs-dev root-mount procfs-mp procfs-dent)])
       (values ns root-mount procfs-mount)))
+  (printf "root-mount is in children ~v\n" (eq? root-mount (car (mnt-namespace-children mnt-ns))))
+  (printf "root-mount same as root ~v\n" (eq? root-mount (mnt-namespace-root mnt-ns)))
   (set-system-mounts! sys (list
     (cons root-dent root-mount)
     (cons procfs-mp procfs-mount)))

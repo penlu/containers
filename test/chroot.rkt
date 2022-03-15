@@ -111,8 +111,7 @@
     ;(printf "~v\n" (dentry-ino (cdr (process-pwd proc))))
 
     ;(printf "~v\n" (device-name (inode-dev (dentry-ino (cdr (process-pwd proc))))))
-    (assert (equal? 'a (device-name (inode-dev (dentry-ino (cdr (process-pwd proc)))))))
-    (define model (solve (assert #t)))
+    (define model (solve (assert (equal? 'a (device-name (inode-dev (dentry-ino (cdr (process-pwd proc)))))))))
     (if (sat? model)
       (printf "escaped chroot: ~v\n:D\n" (evaluate calls model))
       (printf "couldn't find escape :(\n")))
@@ -120,18 +119,18 @@
 
 (synthesize-escape)
 
-; TODO fix, this is broken
 (define (synthesize-no-escape)
-  (define-values (sys proc) (escape-setup))
-  (syscall-drop-cap-sys-chroot! sys proc)
-  (define calls (Calls 6))
+  (printf "beginning test\n")
+  (let*-values ([(calls) (Calls 6)] [(sys proc) (escape-setup)])
 
-  (interpret-calls sys proc calls)
-  (assert (equal? 'a (device-name (inode-dev (dentry-ino (cdr (process-pwd proc)))))))
-  (define model (solve (assert #t)))
-  (if (sat? model)
-    (printf "escaped chroot?! ~v\n:(\n" (evaluate calls model))
-    (printf "couldn't find escape :D\n"))
+    (syscall-drop-cap-sys-chroot! sys proc)
+    (interpret-calls sys proc calls)
+
+    (printf "~v\n" (device-name (inode-dev (dentry-ino (cdr (process-pwd proc))))))
+    (define model (solve (assert (equal? 'a (device-name (inode-dev (dentry-ino (cdr (process-pwd proc)))))))))
+    (if (sat? model)
+      (printf "escaped chroot?! ~v\n:(\n" (evaluate calls model))
+      (printf "couldn't find escape :D\n")))
   )
 
 (synthesize-no-escape)

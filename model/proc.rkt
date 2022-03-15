@@ -27,6 +27,7 @@
           'ENOENT)))])
 
 ; TODO this thing is supposed to die when the proc goes away
+; TODO this generates eexist upon attempting to create folder, fix that
 (struct inode/proc-dir inode (proc) #:transparent #:mutable
   #:methods gen:inode-dir
   [

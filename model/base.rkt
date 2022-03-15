@@ -10,6 +10,7 @@
 (define (err? e)
   (cond
     [(equal? e 'EBADF) #t]
+    [(equal? e 'EBUSY) #t]
     [(equal? e 'EEXIST) #t]
     [(equal? e 'EINVAL) #t]
     [(equal? e 'ENOENT) #t]

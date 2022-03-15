@@ -118,42 +118,57 @@
                 (walk-component (traverse-mounts sys next-path) (cdr next)))))]
         ))))
 
-; copy each mount in a mount namespace
-; returns new mnt-namespace
-; modifies sys to include newly created mounts
-(define (copy-mnt-namespace! sys ns)
+; replace mnt-ns of proc with a copy
+; - also copies each mount in the mount namespace
+; - modifies sys to include newly created mounts
+; - modifies proc root & pwd to use the new mounts
+(define (copy-mnt-namespace! sys proc)
+  (define ns (process-mnt-ns proc))
+
+  ; create new ns struct
   (define inum (system-inum sys))
   (set-system-inum! sys (+ 1 (system-inum sys)))
   (define new-ns (mnt-namespace inum '() '()))
+
   ; iterate over all child mounts of namespace
   ; make a copy of each child mount under the new namespace
-  ; associate new mounts with corresponding old mounts
+  ; associate old mount -> new mount
   (define mount-copy-pairs
     (for/list ([mnt (mnt-namespace-children ns)])
       (cons mnt (struct-copy mount mnt
-        [mnt-ns new-ns]
-        [parent '()]))))
+        [mnt-ns new-ns]))))
   (define mount-copies (map cdr mount-copy-pairs))
-  ; fix parent to use corresponding new mount
+
+  ; helper to look up new mount corresponding to old mount
+  (define (lookup-copy mnt)
+    (let ([found (assoc mnt mount-copy-pairs)])
+      (if found
+        (cdr found)
+        (error "copy of mount not found!"))))
+
+  ; update copied mounts' parents to use copied mounts
   (for-each
-    (lambda (pair)
-      (define old-mnt (car pair))
-      (define new-mnt (cdr pair))
-      (define parent (mount-parent old-mnt))
-      (let ([found (assoc parent mount-copy-pairs)])
-        (if found
-          (set-mount-parent! (cdr found))
-          (error "copy of mount parent not found!"))))
-    mount-copy-pairs)
-  ; set new mount namespace root
-  (set-mnt-namespace-root! new-ns
-    (let ([found (assoc (mnt-namespace-root ns) mount-copy-pairs)])
-      (if found (cdr found) (error "copy of root mount not found!"))))
-  ; set new mount namespace children
-  (set-mnt-namespace-children! new-ns mount-copies)
+    (lambda (mnt)
+      (set-mount-parent! mnt (lookup-copy (mount-parent mnt))))
+    mount-copies)
+
   ; add new mounts to system
   (add-sys-mounts! sys mount-copies)
-  new-ns)
+
+  ; set new mount namespace root
+  (set-mnt-namespace-root! new-ns (lookup-copy (mnt-namespace-root ns)))
+  ; set new mount namespace children
+  (set-mnt-namespace-children! new-ns mount-copies)
+
+  ; update proc mnt-ns, root, pwd
+  (set-process-mnt-ns! proc new-ns)
+  (set-process-root! proc
+    (let ([cur-root (process-root proc)])
+      (cons (lookup-copy (car cur-root)) (cdr cur-root))))
+  (set-process-pwd! proc
+    (let ([cur-pwd (process-pwd proc)])
+      (cons (lookup-copy (car cur-pwd)) (cdr cur-pwd))))
+  )
 
 ; === SYSCALLS ===
 
@@ -207,23 +222,24 @@
       [else (let* (
           [mnt (car path)]
           [mnt-entry (cons (mount-mountpoint mnt) mnt)])
+        ; ensure umount target is in system mount list
         (when (not (member mnt-entry (system-mounts sys)))
           (error "mount missing from system-mounts!"))
-        (when (not (member (car path) (mnt-namespace-children ns)))
+        ; ensure umount target is in mount namespace children
+        (when (not (member mnt (mnt-namespace-children ns)))
+          (printf "path dentry ~v\n" (cdr path))
+          (printf "path mnt root ~v\n" (mount-root mnt))
+          (printf "path mnt mountpoint ~v\n" (mount-mountpoint mnt))
           (error "mount missing from mnt-namespace-children!"))
         ; remove mount from mount list
         (set-system-mounts! sys (remove mnt-entry (system-mounts sys)))
         ; remove mount from namespace
-        (set-mnt-namespace-children! ns (remove (car path) (mnt-namespace-children ns))))]
+        (set-mnt-namespace-children! ns (remove mnt (mnt-namespace-children ns))))]
       )))
 
 ; return new proc
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
 (define (syscall-clone! sys proc flags pid)
-  (define ns
-    (if (member 'CLONE_NEWNS flags)
-      (copy-mnt-namespace! sys (process-mnt-ns proc))
-      (process-mnt-ns proc)))
   (define tgid
     (if (member 'CLONE_THREAD flags)
       (process-tgid proc)
@@ -231,16 +247,17 @@
   (define new-proc
     (struct-copy process proc
       [tgid tgid]
-      [pid pid]
-      [mnt-ns ns]))
+      [pid pid]))
+  ; copy mount namespace
+  (when (member 'CLONE_NEWNS flags)
+    (copy-mnt-namespace! sys new-proc))
   (sys-add-proc! sys pid new-proc)
   pid)
 
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
 (define (syscall-unshare! sys proc flags)
   (when (member 'CLONE_NEWNS flags)
-    (define new-ns (copy-mnt-namespace! sys (process-mnt-ns proc)))
-    (set-process-mnt-ns! new-ns)))
+    (copy-mnt-namespace! sys proc)))
 
 (define (syscall-mkdir! sys proc name)
   (define basename (car (reverse name)))
@@ -298,6 +315,63 @@
       (cond
         [(and (or (equal? nstype 'CLONE_NEWNS) (equal? nstype 0))
               (mnt-namespace? ns))
+          ; TODO update process root and pwd dentry for new mounts
           (set-process-mnt-ns! proc ns)]
         ; more ns types go here
         [else 'EINVAL])]))
+
+(define (path-is-mountpoint path)
+  (define mnt (car path))
+  (define dentry (cdr path))
+  (equal? dentry (mount-root mnt)))
+
+(define (syscall-pivot-root! sys proc new-root put-old)
+  (define new-root-path (namei sys proc new-root))
+  (define put-old-path (namei sys proc put-old))
+  (define cur-root (process-root proc))
+  (define cur-root-mnt (mnt-namespace-root (process-mnt-ns proc)))
+  (for*/all ([new-root-path new-root-path] [put-old-path put-old-path])
+    (cond
+      [(err? new-root-path) new-root-path]
+      [(err? put-old-path) put-old-path]
+      ; new-root is not a dir
+      [(not (inode-dir? (dentry-ino (cdr new-root-path))))
+        'ENOTDIR]
+      ; put-old is not a dir
+      [(not (inode-dir? (dentry-ino (cdr put-old-path))))
+        'ENOTDIR]
+      ; current root is not a mountpoint
+      [(not (path-is-mountpoint cur-root))
+        (printf "current process root is not mountpoint\n")
+        'EINVAL]
+      ; LATER how to determine if put-old is underneath new-root?
+      ; new-root is not a mountpoint
+      [(not (path-is-mountpoint new-root-path))
+        (printf "new-root-path is not mountpoint\n")
+        'EINVAL]
+      [(equal? (car new-root-path) cur-root-mnt)
+        'EBUSY]
+      [(equal? (car put-old-path) cur-root-mnt)
+        'EBUSY]
+      [else
+        (define new-root-mnt (car new-root-path))
+        ; remove mounts from system mount list
+        (define new-root-entry (cons (mount-mountpoint new-root-mnt) new-root-mnt))
+        (define cur-root-entry (cons (mount-mountpoint cur-root-mnt) cur-root-mnt))
+        (set-system-mounts! sys (remove new-root-entry (system-mounts sys)))
+        (set-system-mounts! sys (remove cur-root-entry (system-mounts sys)))
+        ; change parent/child relationship on each mount
+        (set-mount-parent! new-root-mnt new-root-mnt)
+        (set-mount-parent! cur-root-mnt new-root-mnt)
+        ; change mountpoint on each mount
+        (set-mount-mountpoint! new-root-mnt (mount-root new-root-mnt))
+        (set-mount-mountpoint! cur-root-mnt (cdr put-old-path))
+        ; add mounts back to system mount list
+        (add-sys-mounts! sys (list new-root-mnt cur-root-mnt))
+        ; change mnt namespace root
+        (set-mnt-namespace-root! (process-mnt-ns proc) new-root-mnt)
+
+        ; TODO move all procs with a rootd or cwd on old root to new root
+        ]
+    ))
+  )
