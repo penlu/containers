@@ -30,12 +30,13 @@
             pid
             pid
             ns
-            (process-root init)
-            (process-pwd init)
+            (fs-struct
+              (process-root init)
+              (process-pwd init))
             (process-fds init)
             (process-may-chroot init)))
         (sys-add-proc! sys pid new-proc)
-        (printf "NOW SYS PROCS: ~v\n" (system-procs sys))
+        ;(printf "NOW SYS PROCS: ~v\n" (system-procs sys))
         (printf "ADDED NEW PROC: ~v\n" pid)
         )
       '()))
@@ -43,19 +44,32 @@
   (match tr
     [(trace-syscall pid ts "clone" args retval)
       (printf "CLONE: ~v ~v ~v = ~v\n" pid ts args retval)
-      (let ([flags (cdr (assoc 'flags args))])
-        (syscall-clone! sys proc flags retval)
-        )]
+      ;(let ([flags (cdr (assoc 'flags args))])
+      ;  (syscall-clone! sys proc flags retval))
+      ]
+    [(trace-syscall pid ts "execve" (list path) retval)
+      (printf "EXECVE: ~v ~v ~v = ~v\n" pid ts path retval)
+      ]
+    [(trace-syscall pid ts "fchdir" (list fd) retval)
+      (printf "FCHDIR: ~v ~v ~v = ~v\n" pid ts fd retval)]
+    [(trace-syscall pid ts "open" (list path flags) retval)
+      (printf "OPEN: ~v ~v ~v ~v = ~v\n" pid ts path flags retval)
+      ;(syscall-open! sys proc path flags retval)
+      ]
+    [(trace-syscall pid ts "openat" (list path flags) retval)
+      (printf "OPENAT: ~v ~v ~v ~v = ~v\n" pid ts path flags retval)
+      ]
+    [(trace-syscall pid ts "openat" (list path flags mode) retval)
+      (printf "OPENAT: ~v ~v ~v ~v ~v = ~v\n" pid ts path flags mode retval)
+      ]
+    [(trace-syscall pid ts "pivot_root" (list new-root put-old) retval)
+      (printf "PIVOT_ROOT: ~v ~v ~v ~v = ~v\n" pid ts new-root put-old retval)
+      ;(syscall-open! sys proc path flags retval)
+      ]
     [(trace-syscall pid ts "setns" (list fd flags) retval)
       (printf "SETNS: ~v ~v ~v ~v = ~v\n" pid ts fd flags retval)
-      (syscall-setns! sys proc fd flags)]
-    ;[(trace-syscall pid ts "open" (list path flags) retval)
-    ;  (printf "OPEN: ~v ~v ~v ~v = ~v\n" pid ts path flags retval)
-    ;  (syscall-open! sys proc path flags retval)]
-    ;[(trace-syscall pid ts "openat" (list dirfd path flags) retval)
-    ;  (printf "OPENAT: ~v ~v ~v ~v ~v = ~v\n" pid ts dirfd path flags retval)]
-    ;[(trace-syscall pid ts "openat" (list dirfd path flags mode) retval)
-    ;  (printf "OPENAT: ~v ~v ~v ~v ~v ~v = ~v\n" pid ts dirfd path flags mode retval)]
+      ;(syscall-setns! sys proc fd flags)
+      ]
     [_ '()]
     ))
 

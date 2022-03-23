@@ -53,15 +53,13 @@
              [root-mount (mount ns root-dev root-mount root-dent root-dent)]
              [procfs-mount (mount ns procfs-dev root-mount procfs-mp procfs-dent)])
       (values ns root-mount procfs-mount)))
-  (printf "root-mount is in children ~v\n" (eq? root-mount (car (mnt-namespace-children mnt-ns))))
-  (printf "root-mount same as root ~v\n" (eq? root-mount (mnt-namespace-root mnt-ns)))
   (set-system-mounts! sys (list
     (cons root-dent root-mount)
     (cons procfs-mp procfs-mount)))
 
   ; create a process with pwd /
   (define root-path (cons root-mount root-dent))
-  (define proc (process 1 1 mnt-ns root-path root-path '() #t))
+  (define proc (process 1 1 (fs-struct root-path root-path) mnt-ns '() #t))
   (set-system-procs! sys (list (cons 1 proc)))
   sys)
 
@@ -150,3 +148,15 @@
       (cons pid proc)
       (system-procs sys)))
   pid)
+
+(define (process-root proc)
+  (fs-struct-root (process-fs proc)))
+
+(define (process-pwd proc)
+  (fs-struct-pwd (process-fs proc)))
+
+(define (set-process-root! proc root)
+  (set-fs-struct-root! (process-fs proc) root))
+
+(define (set-process-pwd! proc pwd)
+  (set-fs-struct-pwd! (process-fs proc) pwd))

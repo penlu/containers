@@ -238,21 +238,29 @@
       )))
 
 ; return new proc
-; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
+; we support CLONE_NEWNS, CLONE_THREAD, and CLONE_FS
 (define (syscall-clone! sys proc flags pid)
-  (define tgid
-    (if (member 'CLONE_THREAD flags)
-      (process-tgid proc)
-      pid))
-  (define new-proc
-    (struct-copy process proc
-      [tgid tgid]
-      [pid pid]))
-  ; copy mount namespace
-  (when (member 'CLONE_NEWNS flags)
-    (copy-mnt-namespace! sys new-proc))
-  (sys-add-proc! sys pid new-proc)
-  pid)
+  (cond
+    [(and (member 'CLONE_FS flags) (member 'CLONE_NEWNS flags))
+      'EINVAL]
+    [else
+      (define tgid
+        (if (member 'CLONE_THREAD flags)
+          (process-tgid proc)
+          pid))
+      (define new-proc
+        (struct-copy process proc
+          [tgid tgid]
+          [pid pid]))
+      ; copy fs info
+      (when (not (member 'CLONE_FS flags))
+        (set-process-fs! new-proc (struct-copy fs-struct (process-fs proc))))
+      ; copy mount namespace
+      (when (member 'CLONE_NEWNS flags)
+        (copy-mnt-namespace! sys new-proc))
+      (sys-add-proc! sys pid new-proc)
+      pid]
+    ))
 
 ; as we model only mount namespaces at present, CLONE_NEWNS is the only interesting flag
 (define (syscall-unshare! sys proc flags)
@@ -305,6 +313,7 @@
   (set-process-may-chroot! proc #f))
 
 ; LATER capabilities
+; TODO should fail when proc fs is shared
 (define (syscall-setns! sys proc fd nstype)
   (define f (proc-get-fd proc fd))
   (cond
@@ -315,16 +324,22 @@
       (cond
         [(and (or (equal? nstype 'CLONE_NEWNS) (equal? nstype 0))
               (mnt-namespace? ns))
-          ; TODO update process root and pwd dentry for new mounts
-          (set-process-mnt-ns! proc ns)]
+          (set-process-mnt-ns! proc ns)
+          ; update process root and pwd dentry for new mounts
+          (define root (mnt-namespace-root ns))
+          (set-process-root! proc root)
+          (set-process-pwd! proc root)
+          ]
         ; more ns types go here
-        [else 'EINVAL])]))
+        [else 'EINVAL])]
+    ))
 
 (define (path-is-mountpoint path)
   (define mnt (car path))
   (define dentry (cdr path))
   (equal? dentry (mount-root mnt)))
 
+; TODO I don't think pivot-root "." "." works
 (define (syscall-pivot-root! sys proc new-root put-old)
   (define new-root-path (namei sys proc new-root))
   (define put-old-path (namei sys proc put-old))

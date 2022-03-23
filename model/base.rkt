@@ -58,20 +58,24 @@
 ; a process contains:
 ; - tgid
 ; - pid
+; - fs: fs-struct
 ; - mnt-ns: mount namespace
-; - root: root dir, (mnt . dentry)
-; - pwd: working dir, (mnt . dentry)
 ; - fds: list of (fd . (mnt . dentry))
 ; - may-chroot: SYS_CAP_CHROOT stand-in
 ; LATER: users, capabilities
 ; LATER: cgroups
-(struct process (tgid pid mnt-ns root pwd fds may-chroot) #:transparent #:mutable)
+(struct process (tgid pid fs mnt-ns fds may-chroot) #:transparent #:mutable)
 
 ; a mount namespace contains:
 ; - inum: some unique ID number
 ; - root mount
 ; - list of children
 (struct mnt-namespace (inum root children) #:transparent #:mutable)
+
+; an fs-struct contains:
+; - root: root dir, (mnt . dentry)
+; - pwd: working dir, (mnt . dentry)
+(struct fs-struct (root pwd) #:transparent #:mutable)
 
 ; roughly equivalent to struct mount and struct vfsmount
 ; a mount contains:
