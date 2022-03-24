@@ -29,6 +29,8 @@
 ; otherwise, returns path corresponding to the root of the found mount
 (define (traverse-mounts sys path)
   (define mnt (lookup-mnt sys path))
+  (when mnt
+    (printf "traverse-mounts: found ~v on ~v\n" (device-name (mount-dev mnt)) (cdr path)))
   (cond
     ; found no mount; return current mount
     [(not mnt) path]
@@ -84,6 +86,7 @@
         [(not (inode-dir? cur-ino)) 'ENOTDIR]
         ; . goes into mount when . was mounted upon
         [(equal? (car next) ".")
+          (printf "namei: in . with ~v\n" cur)
           (walk-component (traverse-mounts sys cur) (cdr next))]
         ; .. goes up
         [(equal? (car next) "..")
@@ -382,11 +385,16 @@
         (set-mount-mountpoint! new-root-mnt (mount-root new-root-mnt))
         (set-mount-mountpoint! cur-root-mnt (cdr put-old-path))
         ; add mounts back to system mount list
-        (add-sys-mounts! sys (list new-root-mnt cur-root-mnt))
+        (add-sys-mounts! sys (list cur-root-mnt new-root-mnt))
         ; change mnt namespace root
         (set-mnt-namespace-root! (process-mnt-ns proc) new-root-mnt)
 
-        ; TODO move all procs with a rootd or cwd on old root to new root
+        ; TODO move all procs with a root or pwd on old root to new root
+        ; for now just moving calling proc
+        (when (and
+            (equal? (car (process-root proc)) cur-root-mnt)
+            (equal? (cdr (process-root proc)) (mount-root cur-root-mnt)))
+          (set-process-root! proc (cons new-root-mnt (mount-root new-root-mnt))))
         ]
     ))
   )

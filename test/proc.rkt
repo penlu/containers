@@ -38,3 +38,33 @@
   )
 
 (test-proc)
+
+(define (test-pivot-root)
+  (define sys (create-sys))
+  (define proc (sys-get-proc sys 1))
+
+  (define new-dev (create-device! sys 'b))
+  (printf "~v\n" (syscall-mkdir! sys proc (list "a")))
+  (printf "~v\n" (syscall-mount! sys proc new-dev (list "a") '()))
+  (printf "~v\n" (syscall-chdir! sys proc (list "a")))
+  (printf "~v\n" (cdr (process-pwd proc)))
+  (printf "~v\n" (syscall-pivot-root! sys proc (list ".") (list ".")))
+
+  (define mnt-ns-root (mnt-namespace-root (process-mnt-ns proc)))
+  (printf "dev should be 'b: ~v\n"
+    (device-name (mount-dev mnt-ns-root)))
+  (printf "parent dev should be 'b: ~v\n"
+    (device-name (mount-dev (mount-parent mnt-ns-root))))
+
+  (printf "should be on 'b: ~v\n" (cdr (process-root proc)))
+  (printf "should be on 'b: ~v\n" (cdr (process-pwd proc)))
+  (printf "\nNAMEI TEST\n")
+  (printf "should be on 'a: ~v\n" (cdr (namei sys proc (list "."))))
+
+  (printf "~v\n" (syscall-umount! sys proc (list ".")))
+  (printf "should be on 'b: ~v\n" (cdr (namei sys proc (list "."))))
+
+  (printf "TEST COMPLETE\n\n")
+  )
+
+(test-pivot-root)
