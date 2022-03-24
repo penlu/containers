@@ -135,6 +135,12 @@
       (process-fds proc)))
   fd)
 
+(define (proc-rm-fd! proc fd)
+  (when (not (proc-get-fd proc fd))
+    (error (format "fd ~v doesn't exist!" fd)))
+  (set-process-fds! proc
+    (remove (cons fd (proc-get-fd proc fd)) (process-fds proc))))
+
 (define (sys-get-proc sys pid)
   (let ([proc (assoc pid (system-procs sys))])
     (if proc (cdr proc) #f)))

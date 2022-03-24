@@ -12,11 +12,13 @@
   #:methods gen:inode-dir
   [
     (define (inode-lookup ino name)
+      (printf "proc-root got lookup with ~v\n" name)
       (let* (
           [dev (inode-dev ino)]
           [procs (system-procs (device-sys dev))]
           [pid (string->number name)]
           [proc (assoc pid procs)])
+        (printf "lookup searching for pid ~v\n" pid)
         (if proc
           ; create proc toplevel dir inode
           (begin

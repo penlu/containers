@@ -29,8 +29,6 @@
 ; otherwise, returns path corresponding to the root of the found mount
 (define (traverse-mounts sys path)
   (define mnt (lookup-mnt sys path))
-  (when mnt
-    (printf "traverse-mounts: found ~v on ~v\n" (device-name (mount-dev mnt)) (cdr path)))
   (cond
     ; found no mount; return current mount
     [(not mnt) path]
@@ -73,6 +71,9 @@
   ; would've used define-values but this upsets rosette
   (define start-path (if is-rel (process-pwd proc) (process-root proc)))
   (define start-name (if is-rel name (cdr name)))
+  (printf "namei with ~v\n" start-name)
+  (printf "namei starting at ~v\n" start-path)
+  (printf "proc root is ~v\n" (process-root proc))
   (let walk-component ([cur start-path] [next start-name])
     (for*/all (
         [cur cur]
@@ -86,7 +87,6 @@
         [(not (inode-dir? cur-ino)) 'ENOTDIR]
         ; . goes into mount when . was mounted upon
         [(equal? (car next) ".")
-          (printf "namei: in . with ~v\n" cur)
           (walk-component (traverse-mounts sys cur) (cdr next))]
         ; .. goes up
         [(equal? (car next) "..")
@@ -111,14 +111,18 @@
         ; normal path; look for child
         [else
           (let ([found (inode-lookup cur-ino (car next))])
-            (if (not found)
-              ; no child with appropriate name; error
-              'ENOENT
+            (printf "namei inode lookup got ~v\n" found)
+            (cond
+              ; no child with appropriate name; return error
+              [(not found) 'ENOENT]
+              ; lookup error; return
+              [(err? found) found]
               ; drop into found child
-              (let* (
-                  [dent (dentry found (cdr cur))]
-                  [next-path (cons cur-mnt dent)])
-                (walk-component (traverse-mounts sys next-path) (cdr next)))))]
+              [else
+                (let* (
+                    [dent (dentry found (cdr cur))]
+                    [next-path (cons cur-mnt dent)])
+                  (walk-component (traverse-mounts sys next-path) (cdr next)))]))]
         ))))
 
 ; replace mnt-ns of proc with a copy
@@ -230,9 +234,6 @@
           (error "mount missing from system-mounts!"))
         ; ensure umount target is in mount namespace children
         (when (not (member mnt (mnt-namespace-children ns)))
-          (printf "path dentry ~v\n" (cdr path))
-          (printf "path mnt root ~v\n" (mount-root mnt))
-          (printf "path mnt mountpoint ~v\n" (mount-mountpoint mnt))
           (error "mount missing from mnt-namespace-children!"))
         ; remove mount from mount list
         (set-system-mounts! sys (remove mnt-entry (system-mounts sys)))
@@ -306,10 +307,18 @@
 (define (syscall-open!
     sys proc name flags
     [fd (+ 1 (length (process-fds proc)))])
+  (printf "open about to namei\n")
   (define f (namei sys proc name))
+  (printf "open got f\n")
   (cond
     [(err? f) f]
     [else (proc-add-fd! proc fd f)]))
+
+(define (syscall-close! sys proc fd)
+  (cond
+    [(not (proc-get-fd proc fd)) 'EBADF]
+    [else
+      (proc-rm-fd! proc fd)]))
 
 ; LATER just a stand-in
 (define (syscall-drop-cap-sys-chroot! sys proc)
@@ -324,14 +333,17 @@
     [(not (inode-ns? (dentry-ino (cdr f)))) 'EINVAL]
     [else
       (define ns (inode-ns (dentry-ino (cdr f))))
+      (printf "nstype: ~v\n" nstype)
       (cond
-        [(and (or (equal? nstype 'CLONE_NEWNS) (equal? nstype 0))
+        [(and (or (equal? (car nstype) 'CLONE_NEWNS)
+                  (equal? (car nstype) 0))
               (mnt-namespace? ns))
           (set-process-mnt-ns! proc ns)
           ; update process root and pwd dentry for new mounts
           (define root (mnt-namespace-root ns))
-          (set-process-root! proc root)
-          (set-process-pwd! proc root)
+          (define root-path (cons root (mount-root root)))
+          (set-process-root! proc root-path)
+          (set-process-pwd! proc root-path)
           ]
         ; more ns types go here
         [else 'EINVAL])]
@@ -398,3 +410,23 @@
         ]
     ))
   )
+
+(define (syscall-pseudo-mount! sys proc name target)
+  (define ns (process-mnt-ns proc))
+  ; find the parent mount and inode
+  (define path (namei sys proc target))
+  (if (err? path)
+    path
+    ; create a new mount w/ the indicated root directory and mountpoint
+    (let* (
+        [new-dev (create-device! sys name)]
+        [new-mnt (mount
+          (process-mnt-ns proc)
+          new-dev
+          (car path)
+          (cdr path)
+          (device-root new-dev))])
+      ; add new mount and new inodes to system
+      (add-sys-mounts! sys new-mnt)
+      ; update mount namespace
+      (set-mnt-namespace-children! ns (list* new-mnt (mnt-namespace-children ns))))))
