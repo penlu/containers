@@ -129,4 +129,4 @@
   [inode-ns inode-ns] ; get namespace
   )
 
-(struct/c dentry inode? dentry?)
+;(struct/c dentry inode? dentry?)

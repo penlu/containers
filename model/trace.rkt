@@ -14,12 +14,15 @@
 
 (struct trace (call retval) #:transparent)
 
+(define (interpret-call sys proc call)
+  (match call
+    [(call-open path) (syscall-open! sys proc path '())]
+    [(call-mkdir path) (syscall-mkdir! sys proc path)]
+    [(call-chdir path) (syscall-chdir! sys proc path)]
+    [(call-chroot path) (syscall-chroot! sys proc path)]
+    [(call-fchdir fd) (syscall-fchdir! sys proc fd)]
+    ))
+
 (define (interpret-calls sys proc calls)
   (for/list ([c calls])
-    (match c
-      [(call-open path) (trace c (syscall-open! sys proc path '()))]
-      [(call-mkdir path) (trace c (syscall-mkdir! sys proc path))]
-      [(call-chdir path) (trace c (syscall-chdir! sys proc path))]
-      [(call-chroot path) (trace c (syscall-chroot! sys proc path))]
-      [(call-fchdir fd) (trace c (syscall-fchdir! sys proc fd))]
-      )))
+    (trace c (interpret-call sys proc call))))

@@ -72,9 +72,6 @@
   ; would've used define-values but this upsets rosette
   (define start-path (if is-rel (process-pwd proc) (process-root proc)))
   (define start-name (if is-rel name (cdr name)))
-  (printf "namei with ~v\n" start-name)
-  (printf "namei starting at ~v\n" start-path)
-  (printf "proc root is ~v\n" (process-root proc))
   (let walk-component ([cur start-path] [next start-name])
     (for*/all (
         [cur cur]
@@ -112,7 +109,6 @@
         ; normal path; look for child
         [else
           (let ([found (inode-lookup cur-ino (car next))])
-            (printf "namei inode lookup got ~v\n" found)
             (cond
               ; no child with appropriate name; return error
               [(not found) 'ENOENT]
@@ -311,9 +307,7 @@
 (define (syscall-open!
     sys proc name flags
     [fd (+ 1 (length (process-fds proc)))])
-  (printf "open about to namei\n")
   (define f (namei sys proc name))
-  (printf "open got f\n")
   (cond
     [(err? f) f]
     [else (proc-add-fd! proc fd f)]))
@@ -337,7 +331,6 @@
     [(not (inode-ns? (dentry-ino (cdr f)))) 'EINVAL]
     [else
       (define ns (inode-ns (dentry-ino (cdr f))))
-      (printf "nstype: ~v\n" nstype)
       (cond
         [(and (or (equal? (car nstype) 'CLONE_NEWNS)
                   (equal? (car nstype) 0))
@@ -376,12 +369,10 @@
         'ENOTDIR]
       ; current root is not a mountpoint
       [(not (path-is-mountpoint cur-root))
-        (printf "current process root is not mountpoint\n")
         'EINVAL]
       ; LATER how to determine if put-old is underneath new-root?
       ; new-root is not a mountpoint
       [(not (path-is-mountpoint new-root-path))
-        (printf "new-root-path is not mountpoint\n")
         'EINVAL]
       [(equal? (car new-root-path) cur-root-mnt)
         'EBUSY]
