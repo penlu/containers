@@ -2,7 +2,7 @@
 
 (require
   rosette/lib/angelic rosette/lib/match rosette/lib/synthax
-  "../model/struct.rkt" "../model/calls.rkt")
+  "../model/struct.rkt" "../model/calls.rkt" "../model/trace.rkt")
 
 ; set up a system with a chroot jail and try to escape
 (define (escape-setup)
@@ -23,13 +23,6 @@
   ;(printf "TEST: root inode: ~v\n" (dentry-ino (cdr (process-root proc))))
 
   (values sys proc))
-
-(struct call () #:transparent)
-(struct call-open call (path) #:transparent)
-(struct call-mkdir call (path) #:transparent)
-(struct call-chdir call (path) #:transparent)
-(struct call-chroot call (path) #:transparent)
-(struct call-fchdir call (fd) #:transparent)
 
 ; determine whether an escape exists
 (define (Relpath)
@@ -56,16 +49,6 @@
   (cond
     [(equal? n 0) '()]
     [else (choose* (cons (Call) (Calls (- n 1))))]))
-
-(define (interpret-calls sys proc calls)
-  (for-each (lambda (c)
-    (match c
-      [(call-open path) (syscall-open! sys proc path '())]
-      [(call-mkdir path) (syscall-mkdir! sys proc path)]
-      [(call-chdir path) (syscall-chdir! sys proc path)]
-      [(call-chroot path) (syscall-chroot! sys proc path)]
-      [(call-fchdir fd) (syscall-fchdir! sys proc fd)]
-      )) calls))
 
 (define (test-escape)
   (define-values (sys proc) (escape-setup))
