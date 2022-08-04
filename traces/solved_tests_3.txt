@@ -1,0 +1,1331 @@
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("/" "b" "..")) (call-open '("/" "b")) (call-open '("/" "." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-open '(".." "b")) (call-open '("b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" ".")) (call-open '("b" "..")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" "b")) (call-open '("a" "..")) (call-open '("a" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-open '("/" ".." "b")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '(".")) (call-open '("b")) (call-open '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("." "b")) (call-mkdir '("/" "b" ".")) (call-open '("/" "b" "..")))
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-mkdir '(".." ".")) (call-open '("." "a")))
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-mkdir '("/" "." "b")) (call-open '("a" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "..")) (call-mkdir '("/" "b" "a")) (call-open '("/" "a" "..")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "a")) (call-mkdir '("/" "." "..")) (call-open '("/" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/")) (call-mkdir '("/" "b" "..")) (call-open '("a" "..")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '(".")) (call-mkdir '("..")) (call-open '("." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" "." "b")) (call-mkdir '("/" "a" "..")) (call-open '("b" "a")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" "b")) (call-mkdir '(".." ".")) (call-open '("/" "a")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("." "b")) (call-mkdir '("/" "b" ".")) (call-open '("/" "b" "..")))
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-mkdir '(".." ".")) (call-open '("." "a")))
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-mkdir '("/" "." "b")) (call-open '("a" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '()) (call-mkdir '("/" "b" "..")) (call-open '("." "b")))
+no examples found!
+no examples found!
+found example: (list (call-chdir '()) (call-mkdir '(".." "..")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+found example: (list (call-chdir '("." "..")) (call-mkdir '("/" ".." "a")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-chdir '("/" ".." "b")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("." "b")) (call-chdir '("/" ".." ".")) (call-open '("b" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-chdir '(".." "b")) (call-open '("b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-chdir '()) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" ".")) (call-chdir '("b" "..")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '(".")) (call-chdir '("/")) (call-open '("a" "..")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("." "a")) (call-chdir '("/" ".." "a")) (call-open '("a" "b")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" "b")) (call-chdir '("a" "..")) (call-open '("a" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("a")) (call-chdir '("/" "..")) (call-open '("/" "b" ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-chdir '("/" ".." "b")) (call-open '("b" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("." "b")) (call-chdir '("/" ".." ".")) (call-open '("b" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '(".")) (call-chdir '("b")) (call-open '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/")) (call-chdir '()) (call-open '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-open '("/" "b" "..")) (call-mkdir '("b" "..")))
+found example: (list (call-open '("b" ".")) (call-open '("/" ".." "b")) (call-mkdir '("/")))
+found example: (list (call-open '("/" "." "b")) (call-open '("/" "b")) (call-mkdir '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "a")) (call-open '("/" "b")) (call-mkdir '("/" "a" ".")))
+found example: (list (call-mkdir '("b" "b")) (call-open '(".." "a")) (call-mkdir '("." ".")))
+found example: (list (call-mkdir '("/" "b" ".")) (call-open '("b" "..")) (call-mkdir '("/" ".." "a")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/")) (call-open '("a" "..")) (call-mkdir '("/" "b" "a")))
+found example: (list (call-mkdir '("/" "..")) (call-open '("b" "..")) (call-mkdir '(".")))
+found example: (list (call-mkdir '("/")) (call-open '(".." "b")) (call-mkdir '("b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b")) (call-open '("/" "a" ".")) (call-mkdir '("/" "a" "b")))
+found example: (list (call-mkdir '("b")) (call-open '("a" "..")) (call-mkdir '("/")))
+found example: (list (call-mkdir '(".." "b")) (call-open '("/" "a")) (call-mkdir '("a")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-open '("/" "b" "..")) (call-mkdir '("b" "..")))
+found example: (list (call-chdir '("b" ".")) (call-open '("/" ".." "b")) (call-mkdir '("/")))
+found example: (list (call-chdir '("/" "." "b")) (call-open '("/" "b")) (call-mkdir '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '()) (call-open '("/" "b")) (call-mkdir '("/" "b" ".")))
+found example: (list (call-chdir '("." "..")) (call-open '("." "b")) (call-mkdir '("/")))
+found example: (list (call-chdir '("/" ".." "..")) (call-open '(".." "b")) (call-mkdir '("/" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '(".." "b")) (call-mkdir '("b" "..")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-open '(".." "b")) (call-mkdir '("/" "b" "..")) (call-mkdir '(".")))
+found example: (list (call-open '("b")) (call-mkdir '("/" "b" "..")) (call-mkdir '("/" ".." "b")))
+no examples found!
+found example: (list (call-open '("/" "b")) (call-mkdir '("/")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-open '("/" "b")) (call-mkdir '("/" ".")) (call-mkdir '("/" ".")))
+found example: (list (call-open '("b" ".")) (call-mkdir '("/" ".." "..")) (call-mkdir '("." "b")))
+no examples found!
+found example: (list (call-open '(".." "b")) (call-mkdir '(".." "b")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-open '("/" ".." "b")) (call-mkdir '("/" "b")) (call-mkdir '("/")))
+found example: (list (call-open '("b")) (call-mkdir '("/" "." "a")) (call-mkdir '("/" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-mkdir '("b" "..")) (call-mkdir '("/" "b" "a")))
+found example: (list (call-mkdir '("b" "..")) (call-mkdir '("a" "..")) (call-mkdir '("/")))
+found example: (list (call-mkdir '("b" "..")) (call-mkdir '("/" "a" "b")) (call-mkdir '(".." "a")))
+no examples found!
+found example: (list (call-mkdir '("/" "b" "..")) (call-mkdir '("." ".")) (call-mkdir '("/" "a" ".")))
+found example: (list (call-mkdir '("b" ".")) (call-mkdir '("..")) (call-mkdir '("/")))
+found example: (list (call-mkdir '("b" "b")) (call-mkdir '("/" ".." ".")) (call-mkdir '("b")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "..")) (call-mkdir '(".." "b")) (call-mkdir '("/")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/")) (call-mkdir '("/" "b" ".")) (call-mkdir '("/" "b" "..")))
+found example: (list (call-mkdir '("/")) (call-mkdir '("b" "b")) (call-mkdir '("/" "..")))
+found example: (list (call-mkdir '("/")) (call-mkdir '("a" ".")) (call-mkdir '("a")))
+no examples found!
+found example: (list (call-mkdir '("/" "." ".")) (call-mkdir '("/" ".." "..")) (call-mkdir '("/" "b" "..")))
+found example: (list (call-mkdir '("/" "..")) (call-mkdir '("/" "." ".")) (call-mkdir '("." ".")))
+found example: (list (call-mkdir '("/" ".." ".")) (call-mkdir '("/" ".." "..")) (call-mkdir '("a")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '(".")) (call-mkdir '("a")) (call-mkdir '("/")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("a")) (call-mkdir '("b" ".")) (call-mkdir '("/" "b" "..")))
+found example: (list (call-mkdir '("b")) (call-mkdir '("/" "a" ".")) (call-mkdir '("..")))
+found example: (list (call-mkdir '("/" "." "b")) (call-mkdir '("/" "a" "..")) (call-mkdir '("a")))
+no examples found!
+found example: (list (call-mkdir '("/" "a")) (call-mkdir '("/" ".")) (call-mkdir '("/" "b" "b")))
+found example: (list (call-mkdir '(".." "a")) (call-mkdir '("/" "a")) (call-mkdir '("/")))
+found example: (list (call-mkdir '("/" "a")) (call-mkdir '(".")) (call-mkdir '("/" "." "b")))
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("a")) (call-mkdir '(".." "b")) (call-mkdir '("/")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '(".." "b")) (call-mkdir '("b" "..")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-chdir '(".." "b")) (call-mkdir '("/" "b" "..")) (call-mkdir '(".")))
+found example: (list (call-chdir '("b")) (call-mkdir '("/" "b" "..")) (call-mkdir '("/" ".." "b")))
+no examples found!
+found example: (list (call-chdir '("/" "b")) (call-mkdir '("/")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-chdir '("/" "b")) (call-mkdir '("/" ".")) (call-mkdir '("/" ".")))
+found example: (list (call-chdir '("b" ".")) (call-mkdir '("/" ".." "..")) (call-mkdir '("." "b")))
+no examples found!
+found example: (list (call-chdir '(".." "b")) (call-mkdir '(".." "b")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-chdir '("/" ".." "b")) (call-mkdir '("/" "b")) (call-mkdir '("/")))
+found example: (list (call-chdir '("b")) (call-mkdir '("/" "." "a")) (call-mkdir '("/" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" "..")) (call-mkdir '("b" ".")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-chdir '("..")) (call-mkdir '("b" "..")) (call-mkdir '("." ".")))
+found example: (list (call-chdir '("/" ".." "..")) (call-mkdir '("b" ".")) (call-mkdir '("/" ".." "a")))
+no examples found!
+found example: (list (call-chdir '("/" ".." ".")) (call-mkdir '("/")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-chdir '("/" ".." "..")) (call-mkdir '("/" ".." "..")) (call-mkdir '("/")))
+found example: (list (call-chdir '(".." ".")) (call-mkdir '(".." "..")) (call-mkdir '(".." "b")))
+no examples found!
+found example: (list (call-chdir '(".." ".")) (call-mkdir '(".." "b")) (call-mkdir '("/" "a" ".")))
+found example: (list (call-chdir '(".")) (call-mkdir '("/" ".." "a")) (call-mkdir '(".." "..")))
+found example: (list (call-chdir '("/" ".." "..")) (call-mkdir '(".." "a")) (call-mkdir '("b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-chdir '("/" "b" "..")) (call-mkdir '("b" "..")))
+found example: (list (call-open '("b" ".")) (call-chdir '("/" ".." "b")) (call-mkdir '("/")))
+found example: (list (call-open '("/" "." "b")) (call-chdir '("/" "b")) (call-mkdir '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("." "b")) (call-chdir '()) (call-mkdir '("/" "b" ".")))
+found example: (list (call-open '("." "b")) (call-chdir '(".." "..")) (call-mkdir '("/")))
+found example: (list (call-open '("/" "b" "..")) (call-chdir '()) (call-mkdir '("/" ".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "a")) (call-chdir '("/" "b")) (call-mkdir '("/" "a" ".")))
+found example: (list (call-mkdir '("b" "b")) (call-chdir '(".." "a")) (call-mkdir '("." ".")))
+found example: (list (call-mkdir '("/" "b" ".")) (call-chdir '("b" "..")) (call-mkdir '("/" ".." "a")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" "b" "b")) (call-chdir '(".." ".")) (call-mkdir '("/" "a" "..")))
+found example: (list (call-mkdir '("/" "b" "a")) (call-chdir '()) (call-mkdir '(".." ".")))
+found example: (list (call-mkdir '("/" "b" "..")) (call-chdir '("." ".")) (call-mkdir '("." "a")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/")) (call-chdir '("a" "..")) (call-mkdir '("/" "b" "a")))
+found example: (list (call-mkdir '("/" "..")) (call-chdir '("b" "..")) (call-mkdir '(".")))
+found example: (list (call-mkdir '("/")) (call-chdir '(".." "b")) (call-mkdir '("b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" ".")) (call-chdir '("/" "..")) (call-mkdir '("/" "a" ".")))
+found example: (list (call-mkdir '(".")) (call-chdir '()) (call-mkdir '("/")))
+found example: (list (call-mkdir '("/")) (call-chdir '(".." "..")) (call-mkdir '("." "b")))
+no examples found!
+found example: (list (call-mkdir '("/" "." "a")) (call-chdir '("a" ".")) (call-mkdir '("/" "b" "a")))
+found example: (list (call-mkdir '("." "b")) (call-chdir '("/" "." "b")) (call-mkdir '("/" ".." "b")))
+found example: (list (call-mkdir '(".." "b")) (call-chdir '("b")) (call-mkdir '("a")))
+no examples found!
+found example: (list (call-mkdir '("b")) (call-chdir '("/" "a" ".")) (call-mkdir '("/" "a" "b")))
+found example: (list (call-mkdir '("b")) (call-chdir '("a" "..")) (call-mkdir '("/")))
+found example: (list (call-mkdir '(".." "b")) (call-chdir '("/" "a")) (call-mkdir '("a")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("." "a")) (call-chdir '("/" ".")) (call-mkdir '("/" "b" "..")))
+found example: (list (call-mkdir '(".." "a")) (call-chdir '("/" "." ".")) (call-mkdir '("/" ".." "..")))
+found example: (list (call-mkdir '(".." "a")) (call-chdir '(".")) (call-mkdir '("b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-chdir '("/" "b" "..")) (call-mkdir '("b" "..")))
+found example: (list (call-chdir '("b" ".")) (call-chdir '("/" ".." "b")) (call-mkdir '("/")))
+found example: (list (call-chdir '("/" "." "b")) (call-chdir '("/" "b")) (call-mkdir '(".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("." "b")) (call-chdir '()) (call-mkdir '("/" "b" ".")))
+found example: (list (call-chdir '("." "b")) (call-chdir '(".." "..")) (call-mkdir '("/")))
+found example: (list (call-chdir '("/" "b" "..")) (call-chdir '()) (call-mkdir '("/" ".." "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '()) (call-chdir '("/" "b")) (call-mkdir '("/" "b" ".")))
+found example: (list (call-chdir '("." "..")) (call-chdir '("." "b")) (call-mkdir '("/")))
+found example: (list (call-chdir '("/" ".." "..")) (call-chdir '(".." "b")) (call-mkdir '("/" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/")) (call-chdir '("/" "." "..")) (call-mkdir '("/" "b" "..")))
+found example: (list (call-chdir '()) (call-chdir '()) (call-mkdir '(".." ".")))
+found example: (list (call-chdir '("/" "." ".")) (call-chdir '()) (call-mkdir '("/" "b")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-open '("/" ".." "b")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-open '("/" "b" "b")) (call-open '("b" "..")) (call-chdir '("/" ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-open '(".." "b")) (call-chdir '("b")))
+no examples found!
+found example: (list (call-mkdir '("/" "b" "..")) (call-open '("b" "..")) (call-chdir '(".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" ".")) (call-open '("b" "..")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-mkdir '(".." ".")) (call-open '("b")) (call-chdir '("..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '(".." "a")) (call-open '("b" "..")) (call-chdir '("/" "a" ".")))
+found example: (list (call-mkdir '("/" "b")) (call-open '("a" "..")) (call-chdir '("a" "..")))
+no examples found!
+found example: (list (call-mkdir '(".." "a")) (call-open '("b" "..")) (call-chdir '("..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-open '("/" ".." "b")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-chdir '("/" "b" "b")) (call-open '("b" "..")) (call-chdir '("/" ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '(".")) (call-open '("b")) (call-chdir '(".." "b")))
+no examples found!
+found example: (list (call-chdir '()) (call-open '(".." "b")) (call-chdir '("/" ".." ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("." "b")) (call-mkdir '("/" "b" ".")) (call-chdir '("/" "b" "..")))
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-mkdir '("/" "b" ".")) (call-chdir '()))
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-mkdir '(".." ".")) (call-chdir '("." "a")))
+no examples found!
+found example: (list (call-open '(".." "b")) (call-mkdir '("/")) (call-chdir '(".")))
+found example: (list (call-open '("b" "..")) (call-mkdir '("/" ".." "a")) (call-chdir '("/" "." "a")))
+found example: (list (call-open '("/" ".." "b")) (call-mkdir '("/" "." "b")) (call-chdir '("a" "..")))
+no examples found!
+found example: (list (call-open '("/" "b" "..")) (call-mkdir '("." "b")) (call-chdir '("/" ".." "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "..")) (call-mkdir '("/" "b" "a")) (call-chdir '("/" "a" "..")))
+no examples found!
+found example: (list (call-mkdir '("/" "b" "..")) (call-mkdir '("/" "b" "..")) (call-chdir '("..")))
+no examples found!
+found example: (list (call-mkdir '("b" "a")) (call-mkdir '("/" "." "..")) (call-chdir '("/" "b")))
+no examples found!
+found example: (list (call-mkdir '("/" "b" "b")) (call-mkdir '("/")) (call-chdir '(".")))
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" "..")) (call-mkdir '("b")) (call-chdir '("/" "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/")) (call-mkdir '("/" "b" "..")) (call-chdir '("a" "..")))
+no examples found!
+found example: (list (call-mkdir '("." ".")) (call-mkdir '("b" "..")) (call-chdir '(".")))
+no examples found!
+found example: (list (call-mkdir '(".")) (call-mkdir '("..")) (call-chdir '("." "b")))
+no examples found!
+found example: (list (call-mkdir '("/" ".." ".")) (call-mkdir '("/")) (call-chdir '("/")))
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" ".." "..")) (call-mkdir '("/" ".." "b")) (call-chdir '("/" ".." "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("." "a")) (call-mkdir '("/" "b" "..")) (call-chdir '("/" "." "a")))
+found example: (list (call-mkdir '("/" "." "b")) (call-mkdir '("/" "a" "..")) (call-chdir '("b" "a")))
+no examples found!
+found example: (list (call-mkdir '("/" "." "b")) (call-mkdir '("/" "a" "a")) (call-chdir '("/" "..")))
+found example: (list (call-mkdir '(".." "b")) (call-mkdir '("/")) (call-chdir '("b")))
+found example: (list (call-mkdir '("/" "b")) (call-mkdir '(".." ".")) (call-chdir '("/" "a")))
+no examples found!
+found example: (list (call-mkdir '("a")) (call-mkdir '("/")) (call-chdir '()))
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '(".." "a")) (call-mkdir '("b")) (call-chdir '("/" ".." ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("." "b")) (call-mkdir '("/" "b" ".")) (call-chdir '("/" "b" "..")))
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-mkdir '("/" "b" ".")) (call-chdir '()))
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-mkdir '(".." ".")) (call-chdir '("." "a")))
+no examples found!
+found example: (list (call-chdir '(".." "b")) (call-mkdir '("/")) (call-chdir '(".")))
+found example: (list (call-chdir '("b" "..")) (call-mkdir '("/" ".." "a")) (call-chdir '("/" "." "a")))
+found example: (list (call-chdir '("/" ".." "b")) (call-mkdir '("/" "." "b")) (call-chdir '("a" "..")))
+no examples found!
+found example: (list (call-chdir '("/" "b" "..")) (call-mkdir '("." "b")) (call-chdir '("/" ".." "..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '()) (call-mkdir '("/" "b" "..")) (call-chdir '("." "b")))
+no examples found!
+found example: (list (call-chdir '("." "..")) (call-mkdir '("/" "b" "..")) (call-chdir '("/" "..")))
+no examples found!
+found example: (list (call-chdir '()) (call-mkdir '(".." "..")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-chdir '("/" ".." "..")) (call-mkdir '("/")) (call-chdir '("/" ".." "..")))
+found example: (list (call-chdir '(".." "..")) (call-mkdir '(".." "b")) (call-chdir '("/" ".." "b")))
+found example: (list (call-chdir '("." "..")) (call-mkdir '("/" ".." "a")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-chdir '("/")) (call-mkdir '(".." "a")) (call-chdir '()))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("/" ".." "b")) (call-chdir '("/" ".." "b")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-open '("/" "b" "b")) (call-chdir '("b" "..")) (call-chdir '("/" ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-open '("." "b")) (call-chdir '("/" ".." ".")) (call-chdir '("b" "b")))
+no examples found!
+found example: (list (call-open '(".." "b")) (call-chdir '("/")) (call-chdir '()))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-chdir '(".." "b")) (call-chdir '("b")))
+no examples found!
+found example: (list (call-mkdir '("/" "b" "..")) (call-chdir '("b" "..")) (call-chdir '(".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("b" ".")) (call-chdir '()) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-mkdir '("/" "b" "..")) (call-chdir '(".." ".")) (call-chdir '("/")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" ".")) (call-chdir '("b" "..")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-mkdir '(".." ".")) (call-chdir '("b")) (call-chdir '("..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '(".")) (call-chdir '("/")) (call-chdir '("a" "..")))
+no examples found!
+found example: (list (call-mkdir '("/")) (call-chdir '()) (call-chdir '()))
+found example: (list (call-mkdir '("." "b")) (call-chdir '(".." "b")) (call-chdir '(".." "b")))
+found example: (list (call-mkdir '("." "a")) (call-chdir '("/" ".." "a")) (call-chdir '("a" "b")))
+no examples found!
+found example: (list (call-mkdir '("/" ".." "a")) (call-chdir '("/" "a" ".")) (call-chdir '("/" ".")))
+found example: (list (call-mkdir '(".." "a")) (call-chdir '("b" "..")) (call-chdir '("/" "a" ".")))
+found example: (list (call-mkdir '("/" "b")) (call-chdir '("a" "..")) (call-chdir '("a" "..")))
+no examples found!
+found example: (list (call-mkdir '(".." "a")) (call-chdir '("b" "..")) (call-chdir '("..")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-mkdir '("/" "." "a")) (call-chdir '("/")) (call-chdir '("a")))
+found example: (list (call-mkdir '("a")) (call-chdir '("/" "..")) (call-chdir '("/" "b" ".")))
+no examples found!
+found example: (list (call-mkdir '("/" ".." "b")) (call-chdir '(".." ".")) (call-chdir '(".." ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/" ".." "b")) (call-chdir '("/" ".." "b")) (call-chdir '("b" "..")))
+no examples found!
+found example: (list (call-chdir '("/" "b" "b")) (call-chdir '("b" "..")) (call-chdir '("/" ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("." "b")) (call-chdir '("/" ".." ".")) (call-chdir '("b" "b")))
+no examples found!
+found example: (list (call-chdir '(".." "b")) (call-chdir '("/")) (call-chdir '()))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '(".")) (call-chdir '("b")) (call-chdir '(".." "b")))
+no examples found!
+found example: (list (call-chdir '()) (call-chdir '(".." "b")) (call-chdir '("/" ".." ".")))
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+no examples found!
+found example: (list (call-chdir '("/")) (call-chdir '()) (call-chdir '(".." "b")))
+no examples found!
+found example: (list (call-chdir '()) (call-chdir '(".." "..")) (call-chdir '("/" ".")))
