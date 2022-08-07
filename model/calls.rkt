@@ -269,31 +269,37 @@
     (copy-mnt-namespace! sys proc)))
 
 (define (syscall-mkdir! sys proc name)
-  (define basename (car (reverse name)))
-  (define dirname (reverse (cdr (reverse name))))
-  (define parent (namei sys proc dirname))
-  (for/all ([parent parent])
-    (if (err? parent)
-      parent
-      (for/all ([parent-dent (cdr parent)])
-        (define parent-ino (dentry-ino parent-dent))
-        (when (union? parent-ino) (error "mkdir: parent-ino is union, needs handling"))
-        (cond
-          ; we must resolve parent dir
-          [(err? parent) parent]
-          [(not (inode-dir? parent-ino)) 'ENOTDIR]
-          [(not (err? (namei sys proc name))) 'EEXIST]
-          [else
-            (define new-ino (create-inode/dir! (inode-dev parent-ino)))
-            (add-inode-child! parent-ino basename new-ino)])))))
+  (if (equal? name '())
+    'EEXIST
+    (begin
+      (define basename (car (reverse name)))
+      (define dirname (reverse (cdr (reverse name))))
+      (define parent (namei sys proc dirname))
+      (for/all ([parent parent])
+        (if (err? parent)
+          parent
+          (for*/all (
+              [parent-dent (cdr parent)]
+              [parent-ino (dentry-ino parent-dent)])
+            (cond
+              ; we must resolve parent dir
+              [(err? parent) parent]
+              [(not (inode-dir? parent-ino)) 'ENOTDIR]
+              [(not (err? (namei sys proc name))) 'EEXIST]
+              [else
+                (define new-ino (create-inode/dir! (inode-dev parent-ino)))
+                (add-inode-child! parent-ino basename new-ino)]))))
+      )))
 
 (define (syscall-chdir! sys proc name)
   (define path (namei sys proc name))
   (for/all ([path path])
     (if (err? path)
       path
-      (for/all ([dent (cdr path)])
-        (if (not (inode-dir? (dentry-ino dent)))
+      (for*/all (
+          [dent (cdr path)]
+          [ino (dentry-ino dent)])
+        (if (not (inode-dir? ino))
           'ENOTDIR
           (set-process-pwd! proc (cons (car path) dent)))))))
 

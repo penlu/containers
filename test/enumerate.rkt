@@ -77,7 +77,9 @@
       (let ([paths (sym-paths pathlen)])
         (for*/list (
             [trace (enumerate-calls-sym-path (- num 1) pathlen)]
-            [call (list (call-open paths) (call-mkdir paths) (call-chdir paths))])
+            ;[call (list (call-open paths) (call-mkdir paths) (call-chdir paths))]
+            [call (list (call-open paths))]
+            )
           (cons call trace)))]
   ))
 
@@ -104,19 +106,20 @@
 ; pathlen - length of paths
 ; return: list of tuples (initial system, system calls, final system, return values)
 (define (enumerate inum num pathlen)
-  (for/list ([trace (enumerate-calls num pathlen)])
+  (for/list ([calls (enumerate-calls num pathlen)])
     (begin
-      (printf "current trace: ~v\n" trace)
+      (printf "current trace: ~v\n" calls)
       (define sys (create-sys))
       (define proc (sys-get-proc sys 1))
       (syscall-umount! sys proc (list "/" "proc"))
-      (list trace sys (interpret-calls sys proc trace))
+      (list calls sys (interpret-calls sys proc calls))
       )))
 
 (define (path-to-string path)
-  (if (equal? (car path) "/")
-    (string-append "/" (string-join (cdr path) "/"))
-    (string-join path "/")))
+  (cond
+    [(equal? path '()) "."]
+    [(equal? (car path) "/") (string-append "/" (string-join (cdr path) "/"))]
+    [else (string-join path "/")]))
 
 (define (print-test f test)
   (for-each
@@ -143,6 +146,8 @@
     (for-each (lambda (test) (print-test f test)) tests))
   )
 
+;(print-all-tests)
+
 (define (print-all-sym-tests)
   (let ([tests (enumerate-calls-sym-path 2 2)])
     (for-each (lambda (test) (printf "~v\n" test)) tests)
@@ -152,43 +157,219 @@
 
 ; given trace, return lists of possible retvals for the calls in the trace
 ; returns every feasible trace
-(define (enumerate-retvals trace)
+(define (enumerate-retvals t)
   (cond
-    [(equal? trace '()) (list '())]
+    [(equal? t '()) (list '())]
     [else
       (for*/list (
-          [retval (match (car trace)
-            [(call-open p) (list 'ENOTDIR 'ENOENT (void))]
+          [retval (match (car t)
+            [(call-open p) (list (void) 'ENOTDIR 'ENOENT)]
+            ;[(call-open p) (list 'ENOTDIR 'ENOENT (void))]
             [(call-mkdir p) (list 'ENOTDIR 'ENOENT 'EEXIST (void))]
             [(call-chdir p) (list 'ENOTDIR 'ENOENT 'EEXIST (void))])]
-          [retvals (enumerate-retvals (cdr trace))])
+          [retvals (enumerate-retvals (cdr t))])
         (cons retval retvals))]
     ))
 
 ; return: list of tuples (system calls, return values)
-; symbolic paths on the calls
-; for each possible distinct return value
-(define (sym-enumerate inum num pathlen)
-  (for* (
-      [trace (enumerate-calls-sym-path num pathlen)]
-      [retvals (enumerate-retvals trace)])
-    (when (not (equal? (length trace) (length retvals)))
+; return one example of a concrete trace
+; for each possible distinct series of return values
+(define (enumerate-representatives inum num pathlen)
+  (apply append (for*/list (
+      [t (enumerate-calls-sym-path num pathlen)]
+      [retvals (enumerate-retvals t)])
+    (printf "current retvals: ~v\n" retvals)
+    (when (not (equal? (length t) (length retvals)))
       (error "trace, retvals not same length!"))
     (let* (
         [sys (create-sys)]
         [proc (sys-get-proc sys 1)])
       (syscall-umount! sys proc (list "/" "proc"))
       (let ([model (solve
-        (for ([call trace] [ret retvals])
+        (for ([call t] [ret retvals])
           (assert (equal? (interpret-call sys proc call) ret))))])
         (if (sat? model)
-          (printf "found example: ~v\n"
-            (evaluate trace
-              (complete-solution model (symbolics trace))))
-          (printf "no examples found!\n")))
-      ;(let ([cur-vc (vc)])
-      ;  (printf "assumes: ~v\n" (vc-assumes cur-vc))
-      ;  (printf "asserts: ~v\n" (vc-asserts cur-vc)))
-      )))
+          (let ([ctrace (evaluate t (complete-solution model (symbolics t)))])
+            (list (for/list (
+                [call ctrace]
+                [ret retvals])
+              (trace call ret))))
+          '()
+          ))
+      ))))
 
-(sym-enumerate 0 2 2)
+(define (print-representative-sym-tests)
+  (let (
+      [tests (enumerate-representatives 0 3 2)]
+      [f (open-output-file "representatives.txt" #:exists 'replace)])
+    (for-each (lambda (test) (print-test f (list '() '() test))) tests)
+    ))
+
+;(print-representative-sym-tests)
+
+(define (check-crashfree inum num pathlen)
+  (for ([t (enumerate-calls-sym-path num pathlen)])
+    ; check for whether model was crash-free on this trace
+    (let* (
+        [sys (create-sys)]
+        [proc (sys-get-proc sys 1)])
+      (syscall-umount! sys proc (list "/" "proc"))
+      (clear-vc!)
+      (let ([m (verify (interpret-calls sys proc t))])
+        (if (sat? m)
+          ; we can crash model with a concrete input?
+          (let ([bad (evaluate t (complete-solution m (symbolics t)))])
+            ;(printf "model: ~v\n" m)
+            (printf "bug input: ~v\n" bad)
+            (let* (
+                [sys (create-sys)]
+                [proc (sys-get-proc sys 1)])
+              (printf "~v\n" (interpret-calls sys proc bad)))
+            )
+          (printf "ok\n"))
+        ))
+    ))
+
+;(check-crashfree 0 2 2)
+
+; return: list of tuples (system calls, return values)
+; return traces with symbolic paths & a constraint
+; for each possible distinct series of return values
+(define (enumerate-distinct inum num pathlen)
+  (apply append (for*/list (
+      [t (enumerate-calls-sym-path num pathlen)]
+      [retvals (enumerate-retvals t)]
+      )
+    (when (not (equal? (length t) (length retvals)))
+      (error "trace, retvals not same length!"))
+    (let* (
+        [sys (create-sys)]
+        [proc (sys-get-proc sys 1)])
+      (syscall-umount! sys proc (list "/" "proc"))
+      (clear-vc!)
+      (let (
+          [a (for/fold ([conj #t]) ([call t] [ret retvals])
+            (and (equal? (interpret-call sys proc call) ret) conj))])
+        ;(printf "assumes: ~v\nasserts:~v\n" (vc-assumes (vc)) (vc-asserts (vc)))
+        (let ([x (vc-asserts (vc))])
+          (with-vc
+            (when (sat? (verify (assert x)))
+              (printf "oh no\n"))))
+        (if (sat? (solve (assert a)))
+          (list (list a t retvals))
+          '())
+        )))))
+
+(define (bool-to-string b)
+  (match b
+    ;[(term content type) (printf "term with content ~v type ~v\n" content type)]
+    [(constant id type)
+      ;(printf "constant with id ~v ~v type ~v\n" (syntax->datum (car id)) (cadr id) type)
+      (string-append (symbol->string (syntax->datum (car id))) (number->string (cadr id)))
+      ]
+    [(expression op child ...)
+      ;(printf "expression with op ~v child ~v\n" op child)
+      (let* (
+          [op-str
+            (cond
+              [(equal? op &&) "#and"]
+              [(equal? op ||) "#or"]
+              [(equal? op !) "#not"])]
+          [op-strs (make-list (- (length child) 1) op-str)]
+          [child-strs
+            (for/list ([c child])
+              (bool-to-string c))]
+          )
+          (string-join (append op-strs child-strs) " ")
+        )
+      ]))
+
+(define (symstr-to-string s)
+  (cond
+    [(concrete? s)
+      (printf "concrete! ~v\n" s)
+      (if (equal? s '())
+        "\".\""
+        (string-append "\"" s "\""))
+      ]
+    [(union? s)
+      (printf "union! ~v\n" s)
+      (let* (
+          [union-strs (for/list ([u (union-contents s)])
+            (let ([b (car u)] [x (cdr u)])
+              (printf "union term: ~v ~v\n" b x)
+              (cons (bool-to-string b) (symstr-to-string x))
+              ))])
+        ;(printf "~v\n" (cdar (reverse union-strs)))
+        (if (equal? (length union-strs) 1)
+          (cdar union-strs)
+          (string-append
+            (string-join
+              (map
+                (lambda (x) (string-append (car x) " " (cdr x)))
+                  (reverse (cdr (reverse union-strs))))
+              " #ite " #:before-first "#ite ")
+            " "
+            (cdar (reverse union-strs))))
+        )
+      ]
+    [(list? s)
+      (printf "list! ~v\n" s)
+      (string-append
+        "#concat #concat "
+        (symstr-to-string (car s))
+        " \"/\" "
+        (symstr-to-string (cdr s)))
+      ]
+    [else
+      (match s
+        [(constant id type)
+          (printf "constant with id ~v ~v type ~v\n" (syntax->datum (car id)) (cadr id) type)
+          (string-append (symbol->string (syntax->datum (car id))) (number->string (cadr id)))
+          ]
+        [(expression op child ...)
+          (printf "expression with op ~v child ~v\n" op child)
+          (let* (
+              [op-str
+                (cond
+                  [(equal? op &&) "#and"]
+                  [(equal? op ||) "#or"]
+                  [(equal? op !) "#not"]
+                  [else "#???"])]
+              [op-strs (make-list (- (length child) 1) op-str)]
+              [child-strs
+                (for/list ([c child])
+                  (bool-to-string c))]
+              )
+              (string-join (append op-strs child-strs) " ")
+            )
+          ]
+        )]
+    )
+  ;(exit 0)
+  )
+
+(define (print-sym-test f test)
+  (let ([a (car test)]
+        [t (cadr test)]
+        [r (caddr test)])
+    ;(display (string-append "#cond " (bool-to-string a) " ; ") f)
+    (fprintf f "#cond ~a ; " (bool-to-string a))
+    (for (
+        [c t]
+        [retval r])
+      (match c
+        [(call-open path) (fprintf f "open ~a = ~v ; " (symstr-to-string path) retval)]
+        [(call-mkdir path) (fprintf f "mkdir ~a = ~v ; " (symstr-to-string path) retval)]
+        [(call-chdir path) (fprintf f "chdir ~a = ~v ; " (symstr-to-string path) retval)]
+        ))
+    ))
+
+(define (print-sym-tests)
+  (let (
+      [tests (enumerate-distinct 0 1 2)]
+      [f (open-output-file "distinct.txt" #:exists 'replace)])
+    (for-each (lambda (test) (print-sym-test f test)) tests)
+    ))
+
+(print-sym-tests)

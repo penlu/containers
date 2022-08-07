@@ -130,7 +130,7 @@
   (when (proc-get-fd proc fd)
     (error (format "fd ~v already exists!" fd)))
   (set-process-fds! proc
-    (list*
+    (cons
       (cons fd f)
       (process-fds proc)))
   fd)
