@@ -42,21 +42,26 @@
 ; try to traverse upward given a path that is the root of a mount
 ; return the path of the topmost mount's mountpoint
 (define (choose-mountpoint path)
+  (printf "choose-mountpoint for ~v\n" path)
   (let ascend ([cur path])
-    (define mnt (car cur))
-    (define parent-mnt (mount-parent mnt))
-    (define mountpoint (mount-mountpoint mnt))
-    (cond
-      ; we are at root of this mount and parent mount is the same
-      ; this means we are at the root mount and should stop
-      [(and
-        (equal? (cdr path) mountpoint)
-        (equal? mnt parent-mnt)) (cons mnt mountpoint)]
-      ; mountpoint is root of the parent mount; we go up again
-      [(equal? mountpoint (mount-root parent-mnt))
-        (ascend (cons parent-mnt mountpoint))]
-      ; we stop here
-      [else (cons parent-mnt mountpoint)])))
+    ;(printf "ascending at ~v\n" cur)
+    (for*/all (
+        [mnt (car cur)]
+        [dent (cdr cur)]
+        [parent-mnt (mount-parent mnt)]
+        [mountpoint (mount-mountpoint mnt)])
+      (cond
+        ; mount has no parent; stop
+        [(equal? mnt parent-mnt) cur]
+        ; TODO this may ascend past root when interacting with chroot
+        ; our mountpoint is not the root of our parent mount
+        ; so no need to ascend further
+        [(not (equal? mountpoint (mount-root parent-mnt)))
+          (cons parent-mnt mountpoint)]
+        ; ascending out of this mount landed us on our parent's root
+        ; so we go up again
+        [else (ascend (cons (parent-mnt mountpoint)))])
+      )))
 
 ; performs path traversal, returning a found path or an error
 ; namei starts from the process's root
@@ -111,7 +116,9 @@
           (for/all ([found (inode-lookup cur-ino (car next))])
             (cond
               ; no child with appropriate name; return error
-              [(not found) 'ENOENT]
+              [(not found)
+                ;(printf "namei: not found\n")
+                'ENOENT]
               ; lookup error; return
               [(err? found) found]
               ; drop into found child

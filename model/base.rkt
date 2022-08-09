@@ -135,5 +135,5 @@
   (for*/all ([v v] [l l])
     (cond
       [(null? l) #f]
-      [(equal? v (car l)) #t]
-      [else #f])))
+      [(equal? v (car (car l))) (car l)]
+      [else (sym-assoc v (cdr l))])))

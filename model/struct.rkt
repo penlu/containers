@@ -19,6 +19,7 @@
   #:methods gen:inode-dir
   [
     (define (inode-lookup ino name)
+      ;(printf "normal inode-lookup: ~v in ~v\n" name (inode/dir-children ino))
       (let ([children (inode/dir-children ino)])
         (for/all ([ino (sym-assoc name children)])
           (if ino (cdr ino) #f))))])
