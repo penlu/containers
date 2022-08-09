@@ -130,3 +130,10 @@
   )
 
 ;(struct/c dentry inode? dentry?)
+
+(define (sym-assoc v l)
+  (for*/all ([v v] [l l])
+    (cond
+      [(null? l) #f]
+      [(equal? v (car l)) #t]
+      [else #f])))

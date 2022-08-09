@@ -94,7 +94,7 @@
               (walk-component (process-root proc) (cdr next))]
             ; at root of current mount; ascend to topmost mountpoint
             [(equal? cur-dent (mount-root cur-mnt))
-              (let* (
+              (for*/all (
                   [mountpath (choose-mountpoint cur)]
                   [parent-dent (dentry-parent (cdr mountpath))]
                   [parent-mnt (car mountpath)]
@@ -102,13 +102,13 @@
                 (walk-component (traverse-mounts sys parent-path) (cdr next)))]
             ; no root encounters: just go to parent
             [else
-              (let* (
+              (for*/all (
                   [parent-dent (dentry-parent cur-dent)]
                   [parent-path (cons cur-mnt parent-dent)])
                 (walk-component (traverse-mounts sys parent-path) (cdr next)))])]
         ; normal path; look for child
         [else
-          (let ([found (inode-lookup cur-ino (car next))])
+          (for/all ([found (inode-lookup cur-ino (car next))])
             (cond
               ; no child with appropriate name; return error
               [(not found) 'ENOENT]
@@ -117,9 +117,11 @@
               ; drop into found child
               [else
                 (let* (
-                    [dent (dentry found (cdr cur))]
+                    [dent (dentry found cur-dent)]
                     [next-path (cons cur-mnt dent)])
-                  (walk-component (traverse-mounts sys next-path) (cdr next)))]))]
+                  (walk-component (traverse-mounts sys next-path) (cdr next))
+                  )
+                ]))]
         ))))
 
 ; replace mnt-ns of proc with a copy
@@ -288,7 +290,8 @@
               [(not (err? (namei sys proc name))) 'EEXIST]
               [else
                 (define new-ino (create-inode/dir! (inode-dev parent-ino)))
-                (add-inode-child! parent-ino basename new-ino)]))))
+                (add-inode-child! parent-ino basename new-ino)
+                ]))))
       )))
 
 (define (syscall-chdir! sys proc name)
@@ -313,10 +316,10 @@
 (define (syscall-open!
     sys proc name flags
     [fd (+ 1 (length (process-fds proc)))])
-  (define f (namei sys proc name))
-  (cond
-    [(err? f) f]
-    [else (proc-add-fd! proc fd f)]))
+  (let ([f (namei sys proc name)])
+    (cond
+      [(err? f) f]
+      [else (proc-add-fd! proc fd f)])))
 
 (define (syscall-close! sys proc fd)
   (cond

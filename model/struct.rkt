@@ -1,6 +1,6 @@
 #lang rosette
 
-(require "base.rkt" "proc.rkt")
+(require rosette/base/adt/list "base.rkt" "proc.rkt")
 (provide
   (all-defined-out)
   (all-from-out "base.rkt")
@@ -19,8 +19,9 @@
   #:methods gen:inode-dir
   [
     (define (inode-lookup ino name)
-      (let ([ino (assoc name (inode/dir-children ino))])
-        (if ino (cdr ino) #f)))])
+      (let ([children (inode/dir-children ino)])
+        (for/all ([ino (sym-assoc name children)])
+          (if ino (cdr ino) #f))))])
 
 ; create a dentry w/ given inode and parent as itself
 (define (create-root-dentry ino)
@@ -120,7 +121,7 @@
       (system-mounts sys))))
 
 (define (proc-get-fd proc fd)
-  (let ([f (assoc fd (process-fds proc))])
+  (for/all ([f (assoc fd (process-fds proc))])
     (if f (cdr f) #f)))
 
 ; add file to process fd list

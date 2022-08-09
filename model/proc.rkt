@@ -34,6 +34,7 @@
   #:methods gen:inode-dir
   [
     (define (inode-lookup ino name)
+      (printf "proc-dir got lookup with ~v\n" name)
       (let* (
           [dev (inode-dev ino)]
           [proc (inode/proc-dir-proc ino)])
@@ -49,6 +50,7 @@
   #:methods gen:inode-dir
   [
     (define (inode-lookup ino name)
+      (printf "proc-ns-dir got lookup with ~v\n" name)
       (let* (
           [dev (inode-dev ino)]
           [proc (inode/proc-ns-dir-proc ino)])
